@@ -2,247 +2,379 @@ import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import "./style.css";
 
-type BlockKind = "grass" | "dirt" | "stone" | "wood" | "sand";
+type BlockKind =
+  | "grass" | "dirt" | "stone" | "cobblestone" | "bedrock"
+  | "sand" | "sandstone" | "oak_log" | "oak_planks" | "leaves"
+  | "bricks" | "glass" | "water" | "coal_ore" | "iron_ore"
+  | "gold_ore" | "diamond_ore" | "snow" | "ice" | "wool";
+type BlockDefinition = { kind: BlockKind; label: string; color: number; category: string };
 type Voxel = { mesh: THREE.Mesh; kind: BlockKind };
 
-const palette: { kind: BlockKind; color: number; label: string }[] = [
-  { kind: "grass", color: 0x79a94b, label: "Grass" },
-  { kind: "dirt", color: 0x96613d, label: "Dirt" },
-  { kind: "stone", color: 0x858b8d, label: "Stone" },
-  { kind: "wood", color: 0x9a6a3f, label: "Wood" },
-  { kind: "sand", color: 0xd8c47e, label: "Sand" },
+const blocks: BlockDefinition[] = [
+  { kind: "grass", label: "Grass Block", color: 0x70a94a, category: "Nature" },
+  { kind: "dirt", label: "Dirt", color: 0x875334, category: "Nature" },
+  { kind: "stone", label: "Stone", color: 0x85898a, category: "Stone" },
+  { kind: "cobblestone", label: "Cobblestone", color: 0x777b7b, category: "Stone" },
+  { kind: "bedrock", label: "Bedrock", color: 0x393b3b, category: "Stone" },
+  { kind: "sand", label: "Sand", color: 0xd8c47e, category: "Nature" },
+  { kind: "sandstone", label: "Sandstone", color: 0xc9ad70, category: "Stone" },
+  { kind: "oak_log", label: "Oak Log", color: 0x916039, category: "Wood" },
+  { kind: "oak_planks", label: "Oak Planks", color: 0xb58a55, category: "Wood" },
+  { kind: "leaves", label: "Oak Leaves", color: 0x477d45, category: "Nature" },
+  { kind: "bricks", label: "Bricks", color: 0x985b4c, category: "Building" },
+  { kind: "glass", label: "Glass", color: 0xb9e5e7, category: "Building" },
+  { kind: "water", label: "Water", color: 0x397fc1, category: "Nature" },
+  { kind: "coal_ore", label: "Coal Ore", color: 0x777b7b, category: "Ores" },
+  { kind: "iron_ore", label: "Iron Ore", color: 0x9b8d80, category: "Ores" },
+  { kind: "gold_ore", label: "Gold Ore", color: 0x9b8d55, category: "Ores" },
+  { kind: "diamond_ore", label: "Diamond Ore", color: 0x6b9991, category: "Ores" },
+  { kind: "snow", label: "Snow Block", color: 0xe8f1f2, category: "Nature" },
+  { kind: "ice", label: "Ice", color: 0x9bd5e8, category: "Nature" },
+  { kind: "wool", label: "White Wool", color: 0xe4e0d5, category: "Building" },
 ];
-
+const blockByKind = new Map(blocks.map((block) => [block.kind, block]));
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x9bc7d2);
-scene.fog = new THREE.Fog(0x9bc7d2, 22, 62);
-const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.1, 120);
-camera.position.set(0, 4.8, 8);
+scene.background = new THREE.Color(0x91c7e4);
+scene.fog = new THREE.Fog(0x91c7e4, 42, 115);
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 220);
+camera.position.set(0, 5, 10);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.12;
+renderer.toneMappingExposure = 1.1;
 document.querySelector("#game")!.prepend(renderer.domElement);
 
 const controls = new PointerLockControls(camera, renderer.domElement);
 controls.pointerSpeed = 0.8;
-scene.add(new THREE.HemisphereLight(0xe5f6ff, 0x64724a, 2));
-const sun = new THREE.DirectionalLight(0xfff1d2, 2.5);
-sun.position.set(-12, 22, 10);
+scene.add(new THREE.HemisphereLight(0xe5f6ff, 0x65724c, 2));
+const sun = new THREE.DirectionalLight(0xfff0d5, 2.4);
+sun.position.set(-24, 38, 18);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 scene.add(sun);
 
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const materials = new Map<BlockKind, THREE.MeshStandardMaterial>(
-  palette.map((block) => [block.kind, new THREE.MeshStandardMaterial({ color: block.color, roughness: 1 })]),
-);
-const voxels = new Map<string, Voxel>();
+const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+const voxelMap = new Map<string, Voxel>();
 const keyOf = (x: number, y: number, z: number) => `${x},${y},${z}`;
+const textureCache = new Map<string, THREE.CanvasTexture>();
+
+function makeTexture(kind: BlockKind, face: number): THREE.CanvasTexture {
+  const cacheKey = `${kind}:${face}`;
+  const cached = textureCache.get(cacheKey);
+  if (cached) return cached;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 16;
+  const ctx = canvas.getContext("2d")!;
+  const base = blockByKind.get(kind)!.color;
+  const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
+  const shade = (color: number, amount: number) => {
+    const r = Math.max(0, Math.min(255, ((color >> 16) & 255) + amount));
+    const g = Math.max(0, Math.min(255, ((color >> 8) & 255) + amount));
+    const b = Math.max(0, Math.min(255, (color & 255) + amount));
+    return (r << 16) | (g << 8) | b;
+  };
+  ctx.fillStyle = hex(base);
+  ctx.fillRect(0, 0, 16, 16);
+  let seed = kind.split("").reduce((a, c) => a + c.charCodeAt(0), 17) + face * 101;
+  const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  const speckles = (count: number, spread = 24) => {
+    for (let i = 0; i < count; i++) {
+      const v = random() > 0.5 ? spread : -spread;
+      ctx.fillStyle = hex(shade(base, v));
+      ctx.fillRect(Math.floor(random() * 16), Math.floor(random() * 16), 1 + Math.floor(random() * 2), 1 + Math.floor(random() * 2));
+    }
+  };
+
+  if (kind === "grass" && face !== 2) {
+    ctx.fillStyle = "#795033"; ctx.fillRect(0, 0, 16, 16);
+    ctx.fillStyle = "#8a5b38"; ctx.fillRect(0, 4, 16, 12);
+    speckles(22, 15);
+    ctx.fillStyle = "#70a94a";
+    for (let x = 0; x < 16; x++) ctx.fillRect(x, 0, 1, 2 + Math.floor(random() * 3));
+    speckles(10, 17);
+  } else if (kind === "grass") {
+    speckles(42, 22);
+  } else if (kind === "dirt" || kind === "sand" || kind === "snow" || kind === "wool") {
+    speckles(kind === "sand" ? 35 : 28, 18);
+  } else if (kind === "stone" || kind === "bedrock" || kind === "cobblestone") {
+    speckles(42, 30);
+    if (kind === "cobblestone") {
+      ctx.strokeStyle = "#505656"; ctx.lineWidth = 1;
+      ctx.strokeRect(0.5, 0.5, 7, 7); ctx.strokeRect(8.5, 0.5, 7, 7);
+      ctx.strokeRect(4.5, 8.5, 7, 7); ctx.strokeRect(-3.5, 8.5, 7, 7);
+    }
+    if (kind === "bedrock") { ctx.fillStyle = "#242626"; for (let i = 0; i < 20; i++) ctx.fillRect(Math.floor(random()*16),Math.floor(random()*16),2,1); }
+  } else if (kind === "oak_log") {
+    if (face === 2 || face === 3) {
+      ctx.fillStyle = "#c39a62"; ctx.fillRect(0,0,16,16);
+      ctx.strokeStyle = "#80512f"; ctx.lineWidth = 1;
+      ctx.strokeRect(2,2,12,12); ctx.strokeRect(5,5,6,6);
+      ctx.fillStyle = "#e0bb7d"; ctx.fillRect(7,7,2,2);
+    } else {
+      ctx.fillStyle = "#80512f"; ctx.fillRect(0,0,16,16);
+      for (let x=2; x<16; x+=4) { ctx.fillStyle = x%2 ? "#a87543" : "#694329"; ctx.fillRect(x,0,2,16); }
+      speckles(10,12);
+    }
+  } else if (kind === "oak_planks") {
+    ctx.strokeStyle = "#795536"; ctx.lineWidth = 1;
+    [0,5,10,15].forEach(y => { ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(16,y+.5);ctx.stroke(); });
+    speckles(12,13);
+  } else if (kind === "leaves") {
+    speckles(65, 28);
+    ctx.fillStyle = "#294f2c";
+    for (let i=0;i<18;i++) if(random()>.45) ctx.fillRect(Math.floor(random()*16),Math.floor(random()*16),1,1);
+  } else if (kind === "bricks") {
+    ctx.fillStyle = "#d0b49b"; ctx.fillRect(0,0,16,16);
+    ctx.fillStyle = "#985b4c";
+    for(let y=1;y<16;y+=5){ctx.fillRect(0,y,16,4);ctx.clearRect(y%2?0:4,y,1,4);for(let x=(y%2?0:4);x<16;x+=8)ctx.clearRect(x,y,1,4);}
+    ctx.fillStyle="#985b4c";for(let y=0;y<16;y+=5)ctx.fillRect(0,y,16,1);
+  } else if (kind === "glass" || kind === "ice") {
+    ctx.fillStyle = kind === "glass" ? "#a9dce2" : "#9bd5e8";
+    ctx.fillRect(0,0,16,16); ctx.fillStyle = "#e8ffff";
+    ctx.fillRect(1,1,2,14);ctx.fillRect(1,1,14,2);
+    ctx.fillStyle = "#77b7d0";ctx.fillRect(13,3,2,12);ctx.fillRect(3,13,12,2);
+  } else if (kind === "water") {
+    ctx.fillStyle="#397fc1";ctx.fillRect(0,0,16,16);ctx.fillStyle="#68b5e0";
+    for(let y=2;y<16;y+=5)for(let x=(y%2?1:4);x<16;x+=7)ctx.fillRect(x,y,3,1);
+  } else if (kind.endsWith("_ore")) {
+    speckles(28,20);
+    const ore = kind === "coal_ore" ? "#292d2e" : kind === "iron_ore" ? "#d4b49b" : kind === "gold_ore" ? "#f3cb38" : "#4de5df";
+    for(let i=0;i<13;i++){ctx.fillStyle=ore;const x=Math.floor(random()*14),y=Math.floor(random()*14);ctx.fillRect(x,y,2,2);}
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestMipmapNearestFilter;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.generateMipmaps = true;
+  textureCache.set(cacheKey, texture);
+  return texture;
+}
+
+const materialCache = new Map<BlockKind, THREE.Material[]>();
+function getMaterials(kind: BlockKind): THREE.Material[] {
+  const cached = materialCache.get(kind);
+  if (cached) return cached;
+  const transparent = kind === "glass" || kind === "water" || kind === "ice";
+  const mats = Array.from({ length: 6 }, (_, face) => new THREE.MeshStandardMaterial({
+    map: makeTexture(kind, face),
+    roughness: kind === "ice" || kind === "glass" ? 0.25 : 1,
+    metalness: 0,
+    transparent: kind === "glass" || kind === "water",
+    opacity: kind === "glass" ? 0.42 : kind === "water" ? 0.72 : 1,
+    depthWrite: !transparent,
+  }));
+  materialCache.set(kind, mats);
+  return mats;
+}
 
 function addBlock(x: number, y: number, z: number, kind: BlockKind): void {
   const key = keyOf(x, y, z);
-  if (voxels.has(key)) return;
-  const mesh = new THREE.Mesh(geometry, materials.get(kind)!);
+  if (voxelMap.has(key)) return;
+  const mesh = new THREE.Mesh(cubeGeometry, getMaterials(kind));
   mesh.position.set(x, y, z);
-  mesh.castShadow = true;
+  mesh.castShadow = kind !== "glass" && kind !== "water";
   mesh.receiveShadow = true;
   mesh.userData.voxelKey = key;
   scene.add(mesh);
-  voxels.set(key, { mesh, kind });
+  voxelMap.set(key, { mesh, kind });
 }
-
 function removeBlock(key: string): void {
-  const voxel = voxels.get(key);
+  const voxel = voxelMap.get(key);
   if (!voxel) return;
   scene.remove(voxel.mesh);
-  voxels.delete(key);
+  voxelMap.delete(key);
 }
 
-function makeIsland(): void {
-  for (let x = -9; x <= 9; x++) {
-    for (let z = -9; z <= 9; z++) {
-      const distance = Math.hypot(x, z);
-      if (distance > 9.5 || (distance > 8.2 && Math.sin(x * 2.1) * Math.cos(z * 1.7) > 0.25)) continue;
-      const height = Math.max(0, Math.floor(2.1 - distance * 0.16 + Math.sin(x * 0.55) * Math.cos(z * 0.42) * 0.55));
-      for (let y = -2; y <= height; y++) {
-        const kind: BlockKind = y === height ? (height === 0 && distance > 7 ? "sand" : "grass") : y > height - 2 ? "dirt" : "stone";
-        addBlock(x, y, z, kind);
-      }
+function buildStartingWorld(): void {
+  for (let x=-12;x<=12;x++) for(let z=-12;z<=12;z++) {
+    const d=Math.hypot(x,z);
+    if(d>12.4) continue;
+    const top=Math.max(0,Math.floor(2.4-d*.13+Math.sin(x*.42)*Math.cos(z*.37)*.65));
+    for(let y=-3;y<=top;y++) {
+      const kind:BlockKind=y===top?(d>9?"sand":"grass"):y>top-2?"dirt":"stone";
+      addBlock(x,y,z,kind);
     }
   }
-  // A few trees make the starting island readable and give players materials to build with.
-  for (const [x, z] of [[-4, -3], [5, 2], [2, -6]] as const) {
-    const ground = [...voxels.values()].filter((v) => v.mesh.position.x === x && v.mesh.position.z === z)
-      .reduce((top, v) => Math.max(top, v.mesh.position.y), -2);
-    for (let y = ground + 1; y <= ground + 4; y++) addBlock(x, y, z, "wood");
-    for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) {
-      for (let dy = 2; dy <= 4; dy++) {
-        if (Math.abs(dx) + Math.abs(dz) + Math.abs(dy - 3) < 5) {
-          const leaf = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x477d45, roughness: 1 }));
-          leaf.position.set(x + dx, ground + dy, z + dz);
-          leaf.castShadow = true;
-          leaf.userData.decoration = true;
-          scene.add(leaf);
-        }
-      }
+  for(const [x,z] of [[-5,-4],[6,3],[2,-8]] as const) {
+    const top=[...voxelMap.values()].filter(v=>v.mesh.position.x===x&&v.mesh.position.z===z).reduce((m,v)=>Math.max(m,v.mesh.position.y),0);
+    for(let y=top+1;y<=top+5;y++)addBlock(x,y,z,"oak_log");
+    for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)for(let dy=3;dy<=5;dy++){
+      if(Math.abs(dx)+Math.abs(dz)+Math.abs(dy-4)<5)addBlock(x+dx,top+dy,z+dz,"leaves");
     }
   }
 }
+buildStartingWorld();
 
-makeIsland();
-
-const raycaster = new THREE.Raycaster();
-raycaster.far = 7;
-let selected = 0;
-let toastTimer = 0;
-const toast = document.querySelector<HTMLElement>("#toast")!;
-function showToast(message: string): void {
-  toast.textContent = message;
-  toast.style.opacity = "1";
+const raycaster=new THREE.Raycaster();
+raycaster.far=8;
+let selected=0;
+let creativeMode=true;
+let inventoryOpen=false;
+let toastTimer=0;
+const toast=document.querySelector<HTMLElement>("#toast")!;
+function showToast(message:string):void{
+  toast.textContent=message;toast.style.opacity="1";
   window.clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => (toast.style.opacity = "0"), 1300);
+  toastTimer=window.setTimeout(()=>toast.style.opacity="0",1400);
 }
 
-function updateHotbar(): void {
-  document.querySelectorAll<HTMLElement>(".slot").forEach((slot, index) => {
-    slot.classList.toggle("active", index === selected);
+const hotbar=document.querySelector<HTMLElement>("#hotbar")!;
+const inventory=document.querySelector<HTMLElement>("#inventory")!;
+const inventoryGrid=document.querySelector<HTMLElement>("#inventory-grid")!;
+const selectedName=document.querySelector<HTMLElement>("#selected-name")!;
+const modeLabel=document.querySelector<HTMLElement>("#mode-label")!;
+const slotElements:HTMLElement[]=[];
+function selectBlock(index:number):void{
+  selected=(index+blocks.length)%blocks.length;
+  const def=blocks[selected];
+  selectedName.textContent=def.label;
+  slotElements.forEach((slot,i)=>slot.classList.toggle("active",i===selected%9));
+  document.querySelectorAll<HTMLElement>(".inventory-item").forEach(item=>item.classList.toggle("chosen",item.dataset.kind===def.kind));
+}
+for(let i=0;i<9;i++){
+  const slot=document.createElement("div");
+  slot.className="slot";
+  slot.innerHTML=`<small>${i+1}</small><div class="slot-texture"></div>`;
+  slot.title=blocks[i].label;
+  slotElements.push(slot);hotbar.append(slot);
+}
+function buildInventory():void{
+  inventoryGrid.innerHTML="";
+  blocks.forEach((block,index)=>{
+    const item=document.createElement("button");
+    item.className="inventory-item";
+    item.dataset.kind=block.kind;
+    item.innerHTML=`<span class="inventory-swatch" style="--block-color:#${block.color.toString(16).padStart(6,"0")}"></span><span>${block.label}</span>`;
+    item.addEventListener("click",()=>{selectBlock(index);closeInventory();});
+    inventoryGrid.append(item);
   });
 }
-const hotbar = document.querySelector<HTMLElement>("#hotbar")!;
-palette.forEach((block, index) => {
-  const slot = document.createElement("div");
-  slot.className = "slot";
-  slot.innerHTML = `<small>${index + 1}</small><div class="swatch" style="background:#${block.color.toString(16)}"></div>`;
-  hotbar.append(slot);
-});
-updateHotbar();
+function syncHotbarTextures():void{
+  slotElements.forEach((slot,i)=>{
+    const block=blocks[(selected+i)%blocks.length];
+    const swatch=slot.querySelector<HTMLElement>(".slot-texture")!;
+    swatch.style.backgroundColor=`#${block.color.toString(16).padStart(6,"0")}`;
+    slot.title=block.label;
+  });
+}
+function openInventory():void{
+  inventoryOpen=true;inventory.classList.remove("hidden");
+  controls.unlock();buildInventory();selectBlock(selected);
+}
+function closeInventory():void{
+  inventoryOpen=false;inventory.classList.add("hidden");
+  if(welcome.classList.contains("hidden")&&pause.classList.contains("hidden"))controls.lock();
+}
+selectBlock(0);syncHotbarTextures();
 
-const welcome = document.querySelector<HTMLElement>("#welcome")!;
-const pause = document.querySelector<HTMLElement>("#pause")!;
-const hud = document.querySelector<HTMLElement>("#hud")!;
-const crosshair = document.querySelector<HTMLElement>("#crosshair")!;
-document.querySelector("#play-button")!.addEventListener("click", () => controls.lock());
-document.querySelector("#resume-button")!.addEventListener("click", () => controls.lock());
-
-controls.addEventListener("lock", () => {
-  welcome.classList.add("hidden");
-  pause.classList.add("hidden");
-  hud.classList.remove("hidden");
-  crosshair.style.display = "block";
+const welcome=document.querySelector<HTMLElement>("#welcome")!;
+const pause=document.querySelector<HTMLElement>("#pause")!;
+const hud=document.querySelector<HTMLElement>("#hud")!;
+const crosshair=document.querySelector<HTMLElement>("#crosshair")!;
+document.querySelector("#play-button")!.addEventListener("click",()=>controls.lock());
+document.querySelector("#resume-button")!.addEventListener("click",()=>controls.lock());
+controls.addEventListener("lock",()=>{
+  welcome.classList.add("hidden");pause.classList.add("hidden");
+  hud.classList.remove("hidden");crosshair.style.display="block";
 });
-controls.addEventListener("unlock", () => {
-  if (welcome.classList.contains("hidden")) pause.classList.remove("hidden");
-  crosshair.style.display = "none";
+controls.addEventListener("unlock",()=>{
+  if(inventoryOpen)return;
+  if(welcome.classList.contains("hidden"))pause.classList.remove("hidden");
+  crosshair.style.display="none";
 });
 
-const keys = new Set<string>();
-let creativeMode = false;
-let verticalVelocity = 0;
-let grounded = false;
-const playerRadius = 0.3;
-const eyeHeight = 1.62;
-function collidesAt(position: THREE.Vector3): boolean {
-  const minX = Math.floor(position.x - playerRadius + 0.5);
-  const maxX = Math.floor(position.x + playerRadius + 0.5);
-  const minY = Math.floor(position.y - eyeHeight + 0.5);
-  const maxY = Math.floor(position.y + 0.15 + 0.5);
-  const minZ = Math.floor(position.z - playerRadius + 0.5);
-  const maxZ = Math.floor(position.z + playerRadius + 0.5);
-  for (let x = minX; x <= maxX; x++) for (let y = minY; y <= maxY; y++) for (let z = minZ; z <= maxZ; z++) if (voxels.has(keyOf(x, y, z))) return true;
+const keys=new Set<string>();
+const playerRadius=.3,eyeHeight=1.62;
+let velocityY=0,grounded=false;
+function collidesAt(position:THREE.Vector3):boolean{
+  const minX=Math.floor(position.x-playerRadius+.5),maxX=Math.floor(position.x+playerRadius+.5);
+  const minY=Math.floor(position.y-eyeHeight+.5),maxY=Math.floor(position.y+.1+.5);
+  const minZ=Math.floor(position.z-playerRadius+.5),maxZ=Math.floor(position.z+playerRadius+.5);
+  for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++)for(let z=minZ;z<=maxZ;z++)if(voxelMap.has(keyOf(x,y,z)))return true;
   return false;
 }
-function updateModeLabel(): void {
-  const label = document.querySelector<HTMLElement>("#mode-label");
-  if (label) label.textContent = creativeMode ? "CREATIVE" : "SURVIVAL";
+function updateMode():void{
+  modeLabel.textContent=creativeMode?"CREATIVE":"SURVIVAL";
+  modeLabel.classList.toggle("creative",creativeMode);
 }
-
-window.addEventListener("keydown", (event) => {
+function updateSelectedDisplay():void{
+  syncHotbarTextures();
+  selectedName.textContent=blocks[selected].label;
+  slotElements.forEach((slot,i)=>slot.classList.toggle("active",i===selected%9));
+}
+window.addEventListener("keydown",event=>{
+  if(["Space","ArrowUp","ArrowDown"].includes(event.code))event.preventDefault();
   keys.add(event.code);
-  if (event.code === "KeyG" && !event.repeat) {
-    creativeMode = !creativeMode;
-    verticalVelocity = 0;
-    updateModeLabel();
-    showToast(creativeMode ? "Creative mode" : "Survival mode");
-  }
-  if (/^Digit[1-5]$/.test(event.code)) {
-    selected = Number(event.code.slice(5)) - 1;
-    updateHotbar();
-  }
+  if(event.code==="KeyE"&&!event.repeat){if(inventoryOpen)closeInventory();else if(controls.isLocked)openInventory();}
+  if(event.code==="Escape"&&inventoryOpen){closeInventory();event.stopPropagation();}
+  if(event.code==="KeyG"&&!event.repeat){creativeMode=!creativeMode;velocityY=0;updateMode();showToast(creativeMode?"Creative mode enabled":"Survival mode enabled");}
+  if(/^Digit[1-9]$/.test(event.code)){selectBlock(Number(event.code.slice(5))-1);updateSelectedDisplay();}
 });
-window.addEventListener("keyup", (event) => keys.delete(event.code));
-window.addEventListener("blur", () => keys.clear());
+window.addEventListener("keyup",event=>keys.delete(event.code));
+window.addEventListener("blur",()=>keys.clear());
+window.addEventListener("wheel",event=>{
+  if(!controls.isLocked)return;
+  selectBlock(selected+(event.deltaY>0?1:-1));updateSelectedDisplay();
+},{passive:true});
+window.addEventListener("contextmenu",event=>event.preventDefault());
 
-window.addEventListener("contextmenu", (event) => event.preventDefault());
-window.addEventListener("mousedown", (event) => {
-  if (!controls.isLocked) return;
-  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-  const hits = raycaster.intersectObjects(
-    [...voxels.values()].map((voxel) => voxel.mesh),
-    false,
-  );
-  const hit = hits[0];
-  if (!hit || !hit.face) return;
-  const key = hit.object.userData.voxelKey as string;
-  if (event.button === 0) {
-    const voxel = voxels.get(key);
-    if (voxel && voxel.mesh.position.y > -2) {
-      removeBlock(key);
-      showToast("Block broken");
-    }
-  } else if (event.button === 2) {
-    const normal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-    const target = hit.object.position.clone().add(normal);
-    const x = Math.round(target.x), y = Math.round(target.y), z = Math.round(target.z);
-    const player = camera.position;
-    if (Math.abs(x - player.x) < 1 && Math.abs(z - player.z) < 1 && Math.abs(y - player.y) < 2) return;
-    addBlock(x, y, z, palette[selected].kind);
+window.addEventListener("mousedown",event=>{
+  if(!controls.isLocked||inventoryOpen)return;
+  raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
+  const hit=raycaster.intersectObjects([...voxelMap.values()].map(v=>v.mesh),false)[0];
+  if(!hit||!hit.face)return;
+  const key=hit.object.userData.voxelKey as string;
+  if(event.button===0){
+    removeBlock(key);
+    showToast("Block removed");
+  }else if(event.button===2){
+    const normal=hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+    const target=hit.object.position.clone().add(normal);
+    const x=Math.round(target.x),y=Math.round(target.y),z=Math.round(target.z);
+    const player=camera.position;
+    if(Math.abs(x-player.x)<.8&&Math.abs(z-player.z)<.8&&Math.abs(y-player.y)<1.8)return;
+    addBlock(x,y,z,blocks[selected].kind);
   }
 });
 
-const clock = new THREE.Clock();
-function animate(): void {
+const clock=new THREE.Clock();
+function animate():void{
   requestAnimationFrame(animate);
-  const delta = Math.min(clock.getDelta(), 0.05);
-  if (controls.isLocked) {
-    const sprinting = keys.has("ControlLeft") || (keys.has("ShiftLeft") && creativeMode);
-    const speed = (sprinting ? 9 : 5) * delta;
-    const oldX = camera.position.x;
-    const oldZ = camera.position.z;
-    if (keys.has("KeyW")) controls.moveForward(speed);
-    if (keys.has("KeyS")) controls.moveForward(-speed);
-    if (keys.has("KeyA")) controls.moveRight(-speed);
-    if (keys.has("KeyD")) controls.moveRight(speed);
-    if (collidesAt(camera.position)) { camera.position.x = oldX; camera.position.z = oldZ; }
-    if (creativeMode) {
-      if (keys.has("Space")) camera.position.y += speed;
-      if (keys.has("ShiftLeft") || keys.has("ShiftRight")) camera.position.y -= speed;
-      verticalVelocity = 0;
-      grounded = false;
-    } else {
-      if (keys.has("Space") && grounded) { verticalVelocity = 8.2; grounded = false; }
-      verticalVelocity -= 22 * delta;
-      camera.position.y += verticalVelocity * delta;
-      if (collidesAt(camera.position)) {
-        camera.position.y -= verticalVelocity * delta;
-        if (verticalVelocity < 0) grounded = true;
-        verticalVelocity = 0;
-      } else grounded = false;
-      camera.position.y = Math.max(camera.position.y, -20);
+  const delta=Math.min(clock.getDelta(),.05);
+  if(controls.isLocked&&!inventoryOpen){
+    const speed=(keys.has("ControlLeft")?13:creativeMode?8:5)*delta;
+    const oldX=camera.position.x,oldZ=camera.position.z;
+    if(keys.has("KeyW"))controls.moveForward(speed);
+    if(keys.has("KeyS"))controls.moveForward(-speed);
+    if(keys.has("KeyA"))controls.moveRight(-speed);
+    if(keys.has("KeyD"))controls.moveRight(speed);
+    if(creativeMode){
+      if(keys.has("Space"))camera.position.y+=speed;
+      if(keys.has("ShiftLeft")||keys.has("ShiftRight"))camera.position.y-=speed;
+      velocityY=0;
+    }else{
+      if(collidesAt(camera.position)){camera.position.x=oldX;camera.position.z=oldZ;}
+      if(keys.has("Space")&&grounded){velocityY=8;grounded=false;}
+      velocityY-=22*delta;
+      camera.position.y+=velocityY*delta;
+      if(collidesAt(camera.position)){
+        camera.position.y-=velocityY*delta;
+        if(velocityY<0)grounded=true;
+        velocityY=0;
+      }else grounded=false;
     }
+    camera.position.y=THREE.MathUtils.clamp(camera.position.y,-24,100);
   }
-  renderer.render(scene, camera);
+  renderer.render(scene,camera);
 }
+updateMode();
 animate();
-
-window.addEventListener("resize", () => {
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+window.addEventListener("resize",()=>{
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 });
