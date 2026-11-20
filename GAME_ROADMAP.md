@@ -445,7 +445,7 @@ The sequence is deliberate. Do not jump to public multiplayer while the world mo
 - [~] Runtime atlas packing now consumes the original 120 face-specific canvas textures and supplies the chunk renderer.
 - [~] Worker meshing with main-thread fallback is connected to the live renderer; actual browser worker behaviour still needs manual verification.
 - [~] F3 performance overlay reports FPS, stored blocks, rendered/stored chunks, and render distance; browser FPS and large-world measurements remain outstanding.
-- [~] Vitest unit suites and a deterministic mesher benchmark run in CI; latest baseline is 0.711 ms per 16×64×16 chunk (about 1,407 chunks/second on the GitHub runner).
+- [~] Vitest unit suites and a deterministic mesher benchmark run in CI; recent CI samples range from 0.71–1.17 ms per 16×64×16 chunk (about 855–1,407 chunks/second; runner load varies).
 - [~] Runtime chunk-render manager now converts world chunks to Three.js layer geometry, builds padded neighbour samples, and remeshes active dirty chunks; it is not yet connected to the live game scene.
 - [~] Runtime texture-atlas packing now creates a single nearest-filtered atlas with edge gutters; the current canvas texture cache is not yet passed into it.
 - [~] Version 2 chunk-save serialization, dirty-chunk merge, validation, and legacy array migration are integrated with Ctrl+S/Ctrl+L.
