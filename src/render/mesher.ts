@@ -6,6 +6,7 @@ export interface MeshBuffers {
   readonly positions: Float32Array;
   readonly normals: Float32Array;
   readonly uvs: Float32Array;
+  readonly colors: Float32Array;
   readonly indices: Uint32Array;
   readonly faceCount: number;
 }
@@ -33,12 +34,13 @@ interface LayerBuilder {
   positions: number[];
   normals: number[];
   uvs: number[];
+  colors: number[];
   indices: number[];
   faces: number;
 }
 
 function createBuilder(): LayerBuilder {
-  return { positions: [], normals: [], uvs: [], indices: [], faces: 0 };
+  return { positions: [], normals: [], uvs: [], colors: [], indices: [], faces: 0 };
 }
 
 function visibleFace(current: BlockId, neighbour: BlockId): boolean {
@@ -82,6 +84,7 @@ export function buildChunkMesh(
           for (const vertex of face.vertices) {
             builder.positions.push(x + vertex[0], y + vertex[1], z + vertex[2]);
             builder.normals.push(...face.normal);
+            builder.colors.push(1, 1, 1, definition.opacity ?? 1);
           }
           for (const coordinate of uv) builder.uvs.push(coordinate);
           builder.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
@@ -98,6 +101,7 @@ export function buildChunkMesh(
       positions: new Float32Array(builder.positions),
       normals: new Float32Array(builder.normals),
       uvs: new Float32Array(builder.uvs),
+      colors: new Float32Array(builder.colors),
       indices: new Uint32Array(builder.indices),
       faceCount: builder.faces,
     };
