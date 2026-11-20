@@ -449,7 +449,7 @@ function loadWorld():void{
     blockHistory.clear();
     pendingSaveChunks.clear();
     lastSaved=parsed;
-    localStorage.setItem(SAVE_KEY_V2,JSON.stringify(parsed));
+    try{localStorage.setItem(SAVE_KEY_V2,JSON.stringify(parsed));}catch{/* Keep the migrated save in memory until storage is writable. */}
     chunkRenderer.clear();
     chunkRenderer.updateAroundPlayer(camera.position,renderDistance);
     showToast("World loaded · "+parsed.chunks.reduce((sum,chunk)=>sum+chunk.blocks.length,0).toLocaleString()+" blocks");
