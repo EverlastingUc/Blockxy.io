@@ -52,3 +52,5 @@ h2{font-size:clamp(30px,4vw,46px);letter-spacing:-.06em;margin:0}
 .inventory-footer{margin-top:18px;padding-top:14px;border-top:1px solid #ffffff20;color:#8fa2a1;font-size:8px;text-align:center}
 .inventory-footer span{color:#c5ed83;margin:0 8px}
 @media(max-width:700px){#topbar{padding:0 16px}.top-hint{font-size:8px}.slot{width:39px;height:43px}.slot-texture{width:22px;height:22px}.help{font-size:7px;max-width:96vw;white-space:normal;text-align:center;line-height:1.8}#inventory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.inventory-panel{padding:18px}.inventory-header h2{font-size:23px}}
+
+#inventory-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}.inventory-filter{padding:8px 11px;background:#ffffff0d;border:1px solid #ffffff20;color:#aebfba;font:10px 'DM Mono',monospace;letter-spacing:.04em}.inventory-filter:hover,.inventory-filter.selected{background:#c5ed8320;border-color:#c5ed83;color:#d8ff9a}.inventory-swatch{background-size:cover;background-position:center;background-color:var(--block-color)}.slot-texture{background-size:cover;background-position:center}
