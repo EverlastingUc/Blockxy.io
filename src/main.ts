@@ -180,7 +180,6 @@ window.addEventListener("mousedown", (event) => {
 });
 
 const clock = new THREE.Clock();
-const velocity = new THREE.Vector3();
 function animate(): void {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
