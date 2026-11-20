@@ -13,6 +13,7 @@
 - **Ctrl+S** saves and **Ctrl+L** loads the world. Saves use version 2 chunk data; older v1 local saves are migrated on load.
 - **Ctrl+Z / Ctrl+Y** undo and redo single-block edits.
 - **F3** toggles the performance overlay.
+- **[ / ]** decreases or increases render distance (1–12 chunks).
 
 ## Voxel engine
 
@@ -55,6 +56,7 @@ Open the local URL printed by Vite.
 | Ctrl + Z | Undo last block edit |
 | Ctrl + Y | Redo last block edit |
 | F3 | Toggle performance overlay |
+| [ / ] | Decrease / increase render distance |
 | Esc | Pause / release mouse |
 
 ## Verification
