@@ -123,7 +123,7 @@ export class ChunkRenderManager {
     }
     this.removeRendered(key);
     const group = this.createGroup(mesh);
-    group.position.set(origin.x, origin.y, origin.z);
+    group.position.set(origin.x - 0.5, origin.y - 0.5, origin.z - 0.5);
     group.userData.chunkPosition = position;
     this.scene.add(group);
     this.rendered.set(key, { group, revision });
@@ -155,6 +155,16 @@ export class ChunkRenderManager {
       if (object instanceof THREE.Mesh) object.geometry.dispose();
     });
     this.rendered.delete(key);
+  }
+
+  getRaycastTargets(): THREE.Mesh[] {
+    const targets: THREE.Mesh[] = [];
+    for (const { group } of this.rendered.values()) {
+      for (const child of group.children) {
+        if (child instanceof THREE.Mesh) targets.push(child);
+      }
+    }
+    return targets;
   }
 
   get renderedChunkCount(): number {
