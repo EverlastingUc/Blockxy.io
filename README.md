@@ -78,7 +78,7 @@ npm run benchmark
 
 Automated CI checks validate the code and unit tests. Manual browser gameplay regression testing and representative in-game performance measurements are still required before calling the engine migration complete.
 
-Latest CI baseline (GitHub-hosted Ubuntu runner, Node.js 22): the deterministic 16×64×16 chunk-meshing sample averaged **0.717 ms per chunk** (about **1,394 chunks/second**, 698 benchmark samples, ±1.20% relative margin of error). This is a microbenchmark of the TypeScript mesher, not a browser FPS or full-world throughput claim.
+Latest CI baseline (GitHub-hosted Ubuntu runner, Node.js 22): the deterministic 16×64×16 chunk-meshing sample averaged **0.711 ms per chunk** (about **1,407 chunks/second**, 704 benchmark samples, ±1.10% relative margin of error). This is a microbenchmark of the TypeScript mesher, not a browser FPS or full-world throughput claim.
 
 ## Technology direction
 
