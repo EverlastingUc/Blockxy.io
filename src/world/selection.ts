@@ -1,7 +1,7 @@
 import { BlockId } from "./registry";
 import type { VoxelPosition } from "./coordinates";
 import type { VoxelWorld } from "./world";
-import type { BlockHistory } from "./history";
+import type { BlockEdit, BlockHistory } from "./history";
 
 export interface SelectionBounds {
   readonly min: VoxelPosition;
@@ -97,7 +97,7 @@ export function fillSelection(
 ): SelectionEditResult {
   const normalized = normalizeSelection(bounds);
   const size = assertVolume(normalized, maxVolume);
-  const edits = [];
+  const edits: BlockEdit[] = [];
   let skipped = 0;
   for (let y = 0; y < size.y; y += 1) {
     for (let z = 0; z < size.z; z += 1) {
