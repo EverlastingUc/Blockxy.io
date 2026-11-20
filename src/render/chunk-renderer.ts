@@ -46,6 +46,7 @@ type RenderedChunk = { readonly group: THREE.Group; readonly revision: number };
 export class ChunkRenderManager {
   private readonly streamer = new ChunkStreamer();
   private readonly rendered = new Map<string, RenderedChunk>();
+  private readonly pendingRevisions = new Map<string, number>();
   private readonly activeKeys = new Set<string>();
   private readonly materials: Record<(typeof LAYERS)[number], THREE.MeshStandardMaterial>;
   private readonly executor: MeshingExecutor;
@@ -122,13 +123,24 @@ export class ChunkRenderManager {
     if (this.disposed || !this.world.getChunk(position)) return;
     const key = chunkKey(position);
     const revision = this.world.getChunk(position)!.revision;
+    if (this.pendingRevisions.get(key) === revision) return;
+    this.pendingRevisions.set(key, revision);
     const padded = createPaddedChunk(this.world, position);
     const origin = chunkOrigin(position);
-    const mesh = await this.executor.build(padded, this.atlasLayout, (x, y, z) =>
-      this.world.getBlock({ x: origin.x + x, y: origin.y + y, z: origin.z + z }),
-    );
-    if (this.disposed || !this.world.getChunk(position) || this.world.getChunk(position)!.revision !== revision) {
-      if (!this.disposed && this.world.getChunk(position)) void this.rebuild(position);
+    let mesh: ChunkMesh;
+    try {
+      mesh = await this.executor.build(padded, this.atlasLayout, (x, y, z) =>
+        this.world.getBlock({ x: origin.x + x, y: origin.y + y, z: origin.z + z }),
+      );
+    } catch {
+      if (this.pendingRevisions.get(key) === revision) this.pendingRevisions.delete(key);
+      return;
+    }
+    if (this.pendingRevisions.get(key) === revision) this.pendingRevisions.delete(key);
+    if (this.disposed || !this.activeKeys.has(key) || !this.world.getChunk(position)) return;
+    const currentRevision = this.world.getChunk(position)!.revision;
+    if (currentRevision !== revision) {
+      if (this.rendered.get(key)?.revision !== currentRevision) void this.rebuild(position);
       return;
     }
     this.removeRendered(key);
@@ -185,6 +197,7 @@ export class ChunkRenderManager {
     for (const key of [...this.rendered.keys()]) this.removeRendered(key);
     this.streamer.clear();
     this.activeKeys.clear();
+    this.pendingRevisions.clear();
     this.lastCenterKey = "";
     this.lastRenderDistance = 0;
   }
