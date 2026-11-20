@@ -1,4 +1,3 @@
-import { Chunk } from "./chunk";
 import { blockIdFromKey, BlockId } from "./registry";
 import { chunkKey, indexToLocal, localVoxelIndex, voxelToChunk, voxelToLocal, type ChunkPosition, type VoxelPosition } from "./coordinates";
 import { VoxelWorld } from "./world";
