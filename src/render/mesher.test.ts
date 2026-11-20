@@ -36,6 +36,15 @@ describe("exposed-face mesher", () => {
     expect(mesh.translucent.faceCount).toBe(5);
   });
 
+  it("preserves glass, water, and ice opacity in vertex alpha", () => {
+    const glass = buildChunkMesh(sampleWith(new Map([["0,0,0", BlockId.Glass]])), atlas);
+    const water = buildChunkMesh(sampleWith(new Map([["0,0,0", BlockId.Water]])), atlas);
+    const ice = buildChunkMesh(sampleWith(new Map([["0,0,0", BlockId.Ice]])), atlas);
+    expect(glass.translucent.colors[3]).toBeCloseTo(0.42);
+    expect(water.translucent.colors[3]).toBeCloseTo(0.72);
+    expect(ice.translucent.colors[3]).toBe(1);
+  });
+
   it("accepts neighbour samples beyond the chunk edge", () => {
     const mesh = buildChunkMesh((x, y, z) => {
       if (x === CHUNK_WIDTH - 1 && y === 0 && z === 0) return BlockId.Stone;
