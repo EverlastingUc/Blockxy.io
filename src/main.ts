@@ -228,6 +228,8 @@ function showToast(message:string):void{
 const hotbar=document.querySelector<HTMLElement>("#hotbar")!;
 const inventory=document.querySelector<HTMLElement>("#inventory")!;
 const inventoryGrid=document.querySelector<HTMLElement>("#inventory-grid")!;
+const inventoryFilters=document.querySelector<HTMLElement>("#inventory-filters")!;
+let activeCategory="All";
 const selectedName=document.querySelector<HTMLElement>("#selected-name")!;
 const modeLabel=document.querySelector<HTMLElement>("#mode-label")!;
 const slotElements:HTMLElement[]=[];
@@ -250,8 +252,18 @@ for(let i=0;i<9;i++){
   slotElements.push(slot);hotbar.append(slot);
 }
 function buildInventory():void{
+  inventoryFilters.innerHTML="";
+  const categories=["All",...new Set(blocks.map(block=>block.category))];
+  categories.forEach(category=>{
+    const filter=document.createElement("button");
+    filter.className="inventory-filter"+(activeCategory===category?" selected":"");
+    filter.textContent=category;
+    filter.addEventListener("click",()=>{activeCategory=category;buildInventory();});
+    inventoryFilters.append(filter);
+  });
   inventoryGrid.innerHTML="";
   blocks.forEach((block,index)=>{
+    if(activeCategory!=="All"&&block.category!==activeCategory)return;
     const item=document.createElement("button");
     item.className="inventory-item";
     item.dataset.kind=block.kind;
