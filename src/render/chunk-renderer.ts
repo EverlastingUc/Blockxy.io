@@ -78,6 +78,18 @@ export class ChunkRenderManager {
     for (const chunkPosition of changes.unload) this.remove(chunkPosition);
     for (const chunkPosition of changes.load) {
       if (this.world.getChunk(chunkPosition)) void this.rebuild(chunkPosition);
+      for (const neighbour of [
+        { ...chunkPosition, x: chunkPosition.x - 1 },
+        { ...chunkPosition, x: chunkPosition.x + 1 },
+        { ...chunkPosition, y: chunkPosition.y - 1 },
+        { ...chunkPosition, y: chunkPosition.y + 1 },
+        { ...chunkPosition, z: chunkPosition.z - 1 },
+        { ...chunkPosition, z: chunkPosition.z + 1 },
+      ]) {
+        if (this.rendered.has(chunkKey(neighbour)) && this.world.getChunk(neighbour)) {
+          void this.rebuild(neighbour);
+        }
+      }
     }
     this.rebuildDirty();
   }
