@@ -6,7 +6,8 @@
 
 The first playable foundation includes:
 - A procedurally shaped voxel island with trees.
-- First-person mouse look and WASD movement.
+- First-person mouse look, WASD movement, gravity, collision, and jumping.
+- Survival and Creative modes (press `G` to switch; Creative enables flight).
 - Block breaking and placement.
 - A five-block hotbar.
 - Responsive HUD and pause/resume flow.
@@ -18,7 +19,7 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite. Use **WASD** to move, **mouse** to look, **Space / Shift** to fly up and down, **left click** to break, **right click** to place, and **1–5** to select a block. Press **Esc** to pause.
+Open the local URL printed by Vite. Use **WASD** to move, **mouse** to look, **Space** to jump, **Shift** to fly up/down in Creative, **G** to switch between Survival and Creative, **left click** to break, **right click** to place, and **1–5** to select a block. Hold **Ctrl** to sprint. Press **Esc** to pause.
 
 ## Technology direction
 
@@ -31,4 +32,4 @@ Rust and C++ are planned engine modules; they are not falsely represented as int
 
 ## Development status
 
-This is the initial playable prototype. Chunk streaming, collision/physics, persistence, multiplayer, inventory, crafting, and production WebAssembly integration are not implemented yet.
+This is the initial playable prototype. Chunk streaming, persistent worlds, multiplayer, inventory, crafting, and production WebAssembly integration are not implemented yet. The current collision and movement system is an early prototype.
