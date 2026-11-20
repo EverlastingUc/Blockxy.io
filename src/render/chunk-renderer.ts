@@ -45,6 +45,7 @@ type RenderedChunk = { readonly group: THREE.Group; readonly revision: number };
 export class ChunkRenderManager {
   private readonly streamer = new ChunkStreamer();
   private readonly rendered = new Map<string, RenderedChunk>();
+  private readonly activeKeys = new Set<string>();
   private readonly materials: Record<(typeof LAYERS)[number], THREE.MeshStandardMaterial>;
   private readonly executor: MeshingExecutor;
   private disposed = false;
@@ -75,8 +76,13 @@ export class ChunkRenderManager {
       z: Math.floor(position.z),
     });
     const changes = this.streamer.reconcile(center, renderDistance, 1);
-    for (const chunkPosition of changes.unload) this.remove(chunkPosition);
+    for (const chunkPosition of changes.unload) {
+      const key = chunkKey(chunkPosition);
+      this.activeKeys.delete(key);
+      this.remove(chunkPosition);
+    }
     for (const chunkPosition of changes.load) {
+      this.activeKeys.add(chunkKey(chunkPosition));
       if (this.world.getChunk(chunkPosition)) void this.rebuild(chunkPosition);
       for (const neighbour of [
         { ...chunkPosition, x: chunkPosition.x - 1 },
@@ -98,7 +104,7 @@ export class ChunkRenderManager {
   rebuildDirty(): void {
     if (this.disposed) return;
     for (const position of this.world.consumeDirtyChunks()) {
-      if (this.rendered.has(chunkKey(position))) void this.rebuild(position);
+      if (this.activeKeys.has(chunkKey(position)) && this.world.getChunk(position)) void this.rebuild(position);
     }
   }
 
@@ -163,6 +169,7 @@ export class ChunkRenderManager {
     for (const material of Object.values(this.materials)) material.dispose();
     this.atlasTexture.dispose();
     this.streamer.clear();
+    this.activeKeys.clear();
   }
 }
 
