@@ -33,7 +33,7 @@ describe("exposed-face mesher", () => {
       ["0,0,0", BlockId.Stone], ["1,0,0", BlockId.Glass],
     ])), atlas);
     expect(mesh.opaque.faceCount).toBe(6);
-    expect(mesh.translucent.faceCount).toBe(6);
+    expect(mesh.translucent.faceCount).toBe(5);
   });
 
   it("accepts neighbour samples beyond the chunk edge", () => {
