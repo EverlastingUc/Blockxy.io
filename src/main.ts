@@ -1,6 +1,13 @@
 import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
 import "./style.css";
+import { BlockId, blockIdFromKey, getBlockDefinition } from "./world/registry";
+import { VoxelWorld } from "./world/world";
+import { BlockHistory } from "./world/history";
+import { chunkKey, chunkOrigin, voxelToChunk, type ChunkPosition } from "./world/coordinates";
+import { createSaveV2, mergeDirtyChunks, parseWorldSave, restoreWorld, type WorldSaveV2 } from "./world/save";
+import { createTextureAtlas } from "./render/atlas-builder";
+import { ChunkRenderManager } from "./render/chunk-renderer";
 
 type BlockKind =
   | "grass" | "dirt" | "stone" | "cobblestone" | "bedrock"
@@ -8,7 +15,7 @@ type BlockKind =
   | "bricks" | "glass" | "water" | "coal_ore" | "iron_ore"
   | "gold_ore" | "diamond_ore" | "snow" | "ice" | "wool";
 type BlockDefinition = { kind: BlockKind; label: string; color: number; category: string };
-type Voxel = { mesh: THREE.Mesh; kind: BlockKind };
+
 
 const blocks: BlockDefinition[] = [
   { kind: "grass", label: "Grass Block", color: 0x70a94a, category: "Nature" },
@@ -58,9 +65,16 @@ sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 scene.add(sun);
 
-const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
-const voxelMap = new Map<string, Voxel>();
+const voxelWorld = new VoxelWorld();
+const blockHistory = new BlockHistory(voxelWorld);
 const keyOf = (x: number, y: number, z: number) => `${x},${y},${z}`;
+const pendingSaveChunks = new Map<string, ChunkPosition>();
+let lastSaved: WorldSaveV2 | undefined;
+let buildingWorld = true;
+function trackSaveChange(position: { x: number; y: number; z: number }): void {
+  const chunk = voxelToChunk(position);
+  pendingSaveChunks.set(chunkKey(chunk), chunk);
+}
 const textureCache = new Map<string, THREE.CanvasTexture>();
 
 function makeTexture(kind: BlockKind, face: number): THREE.CanvasTexture {
@@ -155,39 +169,34 @@ function makeTexture(kind: BlockKind, face: number): THREE.CanvasTexture {
   return texture;
 }
 
-const materialCache = new Map<BlockKind, THREE.Material[]>();
-function getMaterials(kind: BlockKind): THREE.Material[] {
-  const cached = materialCache.get(kind);
-  if (cached) return cached;
-  const transparent = kind === "glass" || kind === "water" || kind === "ice";
-  const mats = Array.from({ length: 6 }, (_, face) => new THREE.MeshStandardMaterial({
-    map: makeTexture(kind, face),
-    roughness: kind === "ice" || kind === "glass" ? 0.25 : 1,
-    metalness: 0,
-    transparent: kind === "glass" || kind === "water",
-    opacity: kind === "glass" ? 0.42 : kind === "water" ? 0.72 : 1,
-    depthWrite: !transparent,
-  }));
-  materialCache.set(kind, mats);
-  return mats;
-}
+const atlasTiles = blocks.flatMap((block) =>
+  Array.from({ length: 6 }, (_, face) => ({
+    key: `${block.kind}_${face}`,
+    source: makeTexture(block.kind, face).image as HTMLCanvasElement,
+  })),
+);
+const textureAtlas = createTextureAtlas(atlasTiles);
+const chunkRenderer = new ChunkRenderManager(scene, voxelWorld, textureAtlas.texture, textureAtlas.layout);
 
-function addBlock(x: number, y: number, z: number, kind: BlockKind): void {
-  const key = keyOf(x, y, z);
-  if (voxelMap.has(key)) return;
-  const mesh = new THREE.Mesh(cubeGeometry, getMaterials(kind));
-  mesh.position.set(x, y, z);
-  mesh.castShadow = kind !== "glass" && kind !== "water";
-  mesh.receiveShadow = true;
-  mesh.userData.voxelKey = key;
-  scene.add(mesh);
-  voxelMap.set(key, { mesh, kind });
+function addBlock(x: number, y: number, z: number, kind: BlockKind, recordHistory = false): void {
+  const position = { x, y, z };
+  if (voxelWorld.getBlock(position) !== BlockId.Air) return;
+  const id = blockIdFromKey(kind);
+  if (recordHistory) {
+    blockHistory.edit(position, id);
+    trackSaveChange(position);
+  } else {
+    voxelWorld.setBlock(position, id);
+  }
+  if (!buildingWorld) chunkRenderer.rebuildDirty();
 }
 function removeBlock(key: string): void {
-  const voxel = voxelMap.get(key);
-  if (!voxel) return;
-  scene.remove(voxel.mesh);
-  voxelMap.delete(key);
+  const [x, y, z] = key.split(",").map(Number);
+  const position = { x, y, z };
+  if (voxelWorld.getBlock(position) === BlockId.Air) return;
+  blockHistory.edit(position, BlockId.Air);
+  trackSaveChange(position);
+  chunkRenderer.rebuildDirty();
 }
 
 function buildStartingWorld(): void {
@@ -201,7 +210,10 @@ function buildStartingWorld(): void {
     }
   }
   for(const [x,z] of [[-5,-4],[6,3],[2,-8]] as const) {
-    const top=[...voxelMap.values()].filter(v=>v.mesh.position.x===x&&v.mesh.position.z===z).reduce((m,v)=>Math.max(m,v.mesh.position.y),0);
+    let top = -4;
+    for (let y = 24; y >= -64; y -= 1) {
+      if (voxelWorld.getBlock({ x, y, z }) !== BlockId.Air) { top = y; break; }
+    }
     for(let y=top+1;y<=top+5;y++)addBlock(x,y,z,"oak_log");
     for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)for(let dy=3;dy<=5;dy++){
       if(Math.abs(dx)+Math.abs(dz)+Math.abs(dy-4)<5)addBlock(x+dx,top+dy,z+dz,"leaves");
@@ -209,6 +221,8 @@ function buildStartingWorld(): void {
   }
 }
 buildStartingWorld();
+buildingWorld = false;
+chunkRenderer.updateAroundPlayer(camera.position, 4);
 
 const raycaster=new THREE.Raycaster();
 raycaster.far=8;
@@ -317,7 +331,10 @@ function collidesAt(position:THREE.Vector3):boolean{
   const minX=Math.floor(position.x-playerRadius+.5),maxX=Math.floor(position.x+playerRadius+.5);
   const minY=Math.floor(position.y-eyeHeight+.5),maxY=Math.floor(position.y+.1+.5);
   const minZ=Math.floor(position.z-playerRadius+.5),maxZ=Math.floor(position.z+playerRadius+.5);
-  for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++)for(let z=minZ;z<=maxZ;z++)if(voxelMap.has(keyOf(x,y,z)))return true;
+  for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++)for(let z=minZ;z<=maxZ;z++){
+    const id = voxelWorld.getBlock({ x, y, z });
+    if(id !== BlockId.Air && getBlockDefinition(id).collidable)return true;
+  }
   return false;
 }
 function updateMode():void{
@@ -337,6 +354,8 @@ window.addEventListener("keydown",event=>{
   if(event.code==="KeyG"&&!event.repeat){creativeMode=!creativeMode;velocityY=0;updateMode();showToast(creativeMode?"Creative mode enabled":"Survival mode enabled");}
   if(event.code==="KeyS"&&event.ctrlKey){event.preventDefault();saveWorld();}
   if(event.code==="KeyL"&&event.ctrlKey){event.preventDefault();loadWorld();}
+  if(event.code==="KeyZ"&&event.ctrlKey&&!event.repeat){event.preventDefault();const change=blockHistory.undo();if(change){trackSaveChange(change.position);chunkRenderer.rebuildDirty();showToast("Undo");}}
+  if(event.code==="KeyY"&&event.ctrlKey&&!event.repeat){event.preventDefault();const change=blockHistory.redo();if(change){trackSaveChange(change.position);chunkRenderer.rebuildDirty();showToast("Redo");}}
   if(/^Digit[1-9]$/.test(event.code))chooseHotbarSlot(Number(event.code.slice(5))-1);
 });
 window.addEventListener("keyup",event=>keys.delete(event.code));
@@ -350,40 +369,68 @@ window.addEventListener("contextmenu",event=>event.preventDefault());
 window.addEventListener("mousedown",event=>{
   if(!controls.isLocked||inventoryOpen)return;
   raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
-  const hit=raycaster.intersectObjects([...voxelMap.values()].map(v=>v.mesh),false)[0];
+  const hit=raycaster.intersectObjects(chunkRenderer.getRaycastTargets(),false)[0];
   if(!hit||!hit.face)return;
-  const key=hit.object.userData.voxelKey as string;
+  const normal=hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+  const blockPoint=hit.point.clone().addScaledVector(normal,-0.001);
+  const blockX=Math.floor(blockPoint.x+0.5);
+  const blockY=Math.floor(blockPoint.y+0.5);
+  const blockZ=Math.floor(blockPoint.z+0.5);
   if(event.button===0){
-    removeBlock(key);
+    removeBlock(keyOf(blockX,blockY,blockZ));
     showToast("Block removed");
   }else if(event.button===2){
-    const normal=hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-    const target=hit.object.position.clone().add(normal);
-    const x=Math.round(target.x),y=Math.round(target.y),z=Math.round(target.z);
+    const x=blockX+Math.round(normal.x);
+    const y=blockY+Math.round(normal.y);
+    const z=blockZ+Math.round(normal.z);
     const player=camera.position;
     if(Math.abs(x-player.x)<.8&&Math.abs(z-player.z)<.8&&Math.abs(y-player.y)<1.8)return;
-    addBlock(x,y,z,blocks[selected].kind);
+    addBlock(x,y,z,blocks[selected].kind,true);
   }
 });
 
-const SAVE_KEY="blockxy.creative-world.v1";
+const SAVE_KEY_V2="blockxy.creative-world.v2";
+const SAVE_KEY_V1="blockxy.creative-world.v1";
+function persistWorld():void{
+  const save = lastSaved
+    ? mergeDirtyChunks(lastSaved, voxelWorld, [...pendingSaveChunks.values()])
+    : createSaveV2(voxelWorld);
+  localStorage.setItem(SAVE_KEY_V2, JSON.stringify(save));
+  lastSaved = save;
+  pendingSaveChunks.clear();
+}
 function saveWorld():void{
-  const data=[...voxelMap.values()].map(({mesh,kind})=>({x:Math.round(mesh.position.x),y:Math.round(mesh.position.y),z:Math.round(mesh.position.z),kind}));
-  try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));showToast("World saved · "+data.length.toLocaleString()+" blocks");}
-  catch{showToast("Save failed: browser storage is full");}
+  try{
+    persistWorld();
+    const count = [...voxelWorld.entries()].reduce((total, [, chunk]) => total + chunk.blocks.filter((id) => id !== BlockId.Air).length, 0);
+    showToast("World saved · "+count.toLocaleString()+" blocks");
+  }catch{showToast("Save failed: browser storage is full");}
 }
 function loadWorld():void{
   try{
-    const raw=localStorage.getItem(SAVE_KEY);if(!raw){showToast("No saved world found");return;}
-    const data:unknown=JSON.parse(raw);if(!Array.isArray(data))throw new Error("Invalid save");
-    for(const voxel of voxelMap.values())scene.remove(voxel.mesh);voxelMap.clear();
-    for(const item of data){if(!item||!Number.isFinite(item.x)||!Number.isFinite(item.y)||!Number.isFinite(item.z)||!blockByKind.has(item.kind))continue;addBlock(item.x,item.y,item.z,item.kind as BlockKind);}
-    showToast("World loaded · "+voxelMap.size.toLocaleString()+" blocks");
+    const raw=localStorage.getItem(SAVE_KEY_V2) ?? localStorage.getItem(SAVE_KEY_V1);
+    if(!raw){showToast("No saved world found");return;}
+    const parsed=parseWorldSave(JSON.parse(raw));
+    const restored=restoreWorld(parsed);
+    voxelWorld.clear();
+    for(const [key,chunk] of restored.entries()){
+      const [cx,cy,cz]=key.split(",").map(Number);
+      const origin=chunkOrigin({x:cx,y:cy,z:cz});
+      chunk.forEachOccupied((local,id)=>voxelWorld.setBlock({
+        x:origin.x+local.x,y:origin.y+local.y,z:origin.z+local.z,
+      },id));
+    }
+    blockHistory.clear();
+    pendingSaveChunks.clear();
+    lastSaved=parsed;
+    localStorage.setItem(SAVE_KEY_V2,JSON.stringify(parsed));
+    chunkRenderer.clear();
+    chunkRenderer.updateAroundPlayer(camera.position,4);
+    showToast("World loaded · "+parsed.chunks.reduce((sum,chunk)=>sum+chunk.blocks.length,0).toLocaleString()+" blocks");
   }catch{showToast("Could not load this world save");}
 }
 window.addEventListener("pagehide",()=>{
-  const data=[...voxelMap.values()].map(({mesh,kind})=>({x:Math.round(mesh.position.x),y:Math.round(mesh.position.y),z:Math.round(mesh.position.z),kind}));
-  try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch{/* Browser storage may be unavailable. */}
+  try{persistWorld();}catch{/* Browser storage may be unavailable. */}
 });
 const clock=new THREE.Clock();
 function animate():void{
@@ -413,6 +460,7 @@ function animate():void{
     }
     camera.position.y=THREE.MathUtils.clamp(camera.position.y,-24,100);
   }
+  chunkRenderer.updateAroundPlayer(camera.position,4);
   renderer.render(scene,camera);
 }
 updateMode();
