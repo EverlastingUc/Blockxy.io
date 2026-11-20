@@ -21,12 +21,12 @@ interface Face {
 }
 
 const FACES: readonly Face[] = [
-  { direction: [1, 0, 0], normal: [1, 0, 0], vertices: [[1,0,0],[1,1,0],[1,1,1],[1,0,1]], textureFace: "side" },
-  { direction: [-1, 0, 0], normal: [-1, 0, 0], vertices: [[0,0,1],[0,1,1],[0,1,0],[0,0,0]], textureFace: "side" },
+  { direction: [1, 0, 0], normal: [1, 0, 0], vertices: [[1,0,0],[1,1,0],[1,1,1],[1,0,1]], textureFace: "right" },
+  { direction: [-1, 0, 0], normal: [-1, 0, 0], vertices: [[0,0,1],[0,1,1],[0,1,0],[0,0,0]], textureFace: "left" },
   { direction: [0, 1, 0], normal: [0, 1, 0], vertices: [[0,1,1],[1,1,1],[1,1,0],[0,1,0]], textureFace: "top" },
   { direction: [0, -1, 0], normal: [0, -1, 0], vertices: [[0,0,0],[1,0,0],[1,0,1],[0,0,1]], textureFace: "bottom" },
-  { direction: [0, 0, 1], normal: [0, 0, 1], vertices: [[1,0,1],[1,1,1],[0,1,1],[0,0,1]], textureFace: "side" },
-  { direction: [0, 0, -1], normal: [0, 0, -1], vertices: [[0,0,0],[0,1,0],[1,1,0],[1,0,0]], textureFace: "side" },
+  { direction: [0, 0, 1], normal: [0, 0, 1], vertices: [[1,0,1],[1,1,1],[0,1,1],[0,0,1]], textureFace: "front" },
+  { direction: [0, 0, -1], normal: [0, 0, -1], vertices: [[0,0,0],[0,1,0],[1,1,0],[1,0,0]], textureFace: "back" },
 ];
 
 interface LayerBuilder {
