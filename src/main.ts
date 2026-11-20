@@ -17,7 +17,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9bc7d2);
 scene.fog = new THREE.Fog(0x9bc7d2, 22, 62);
 const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.1, 120);
-camera.position.set(0, 3.2, 8);
+camera.position.set(0, 3.1, 8);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -142,8 +142,34 @@ controls.addEventListener("unlock", () => {
 });
 
 const keys = new Set<string>();
+let creativeMode = false;
+let verticalVelocity = 0;
+let grounded = false;
+const playerRadius = 0.3;
+const eyeHeight = 1.62;
+function collidesAt(position: THREE.Vector3): boolean {
+  const minX = Math.floor(position.x - playerRadius + 0.5);
+  const maxX = Math.floor(position.x + playerRadius + 0.5);
+  const minY = Math.floor(position.y - eyeHeight + 0.5);
+  const maxY = Math.floor(position.y + 0.15 + 0.5);
+  const minZ = Math.floor(position.z - playerRadius + 0.5);
+  const maxZ = Math.floor(position.z + playerRadius + 0.5);
+  for (let x = minX; x <= maxX; x++) for (let y = minY; y <= maxY; y++) for (let z = minZ; z <= maxZ; z++) if (voxels.has(keyOf(x, y, z))) return true;
+  return false;
+}
+function updateModeLabel(): void {
+  const label = document.querySelector<HTMLElement>("#mode-label");
+  if (label) label.textContent = creativeMode ? "CREATIVE" : "SURVIVAL";
+}
+
 window.addEventListener("keydown", (event) => {
   keys.add(event.code);
+  if (event.code === "KeyG" && !event.repeat) {
+    creativeMode = !creativeMode;
+    verticalVelocity = 0;
+    updateModeLabel();
+    showToast(creativeMode ? "Creative mode" : "Survival mode");
+  }
   if (/^Digit[1-5]$/.test(event.code)) {
     selected = Number(event.code.slice(5)) - 1;
     updateHotbar();
@@ -184,14 +210,31 @@ function animate(): void {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
   if (controls.isLocked) {
-    const speed = (keys.has("ControlLeft") ? 10 : 5) * delta;
+    const sprinting = keys.has("ControlLeft") || (keys.has("ShiftLeft") && creativeMode);
+    const speed = (sprinting ? 9 : 5) * delta;
+    const oldX = camera.position.x;
+    const oldZ = camera.position.z;
     if (keys.has("KeyW")) controls.moveForward(speed);
     if (keys.has("KeyS")) controls.moveForward(-speed);
     if (keys.has("KeyA")) controls.moveRight(-speed);
     if (keys.has("KeyD")) controls.moveRight(speed);
-    if (keys.has("Space")) camera.position.y += speed;
-    if (keys.has("ShiftLeft") || keys.has("ShiftRight")) camera.position.y -= speed;
-    camera.position.y = THREE.MathUtils.clamp(camera.position.y, -1, 24);
+    if (collidesAt(camera.position)) { camera.position.x = oldX; camera.position.z = oldZ; }
+    if (creativeMode) {
+      if (keys.has("Space")) camera.position.y += speed;
+      if (keys.has("ShiftLeft") || keys.has("ShiftRight")) camera.position.y -= speed;
+      verticalVelocity = 0;
+      grounded = false;
+    } else {
+      if (keys.has("Space") && grounded) { verticalVelocity = 8.2; grounded = false; }
+      verticalVelocity -= 22 * delta;
+      camera.position.y += verticalVelocity * delta;
+      if (collidesAt(camera.position)) {
+        camera.position.y -= verticalVelocity * delta;
+        if (verticalVelocity < 0) grounded = true;
+        verticalVelocity = 0;
+      } else grounded = false;
+      camera.position.y = Math.max(camera.position.y, -20);
+    }
   }
   renderer.render(scene, camera);
 }
