@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { chunkOrigin, chunkKey, voxelToChunk, type ChunkPosition } from "../world/coordinates";
-import { CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH, BlockId } from "../world/registry";
+import { CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH } from "../world/registry";
 import type { VoxelWorld } from "../world/world";
-import type { AtlasTile, TextureAtlasLayout } from "./atlas";
+import type { TextureAtlasLayout } from "./atlas";
 import { createMeshingExecutor, type MeshingExecutor, type PaddedChunk, PADDED_CHUNK_DEPTH, PADDED_CHUNK_HEIGHT, PADDED_CHUNK_WIDTH } from "./mesher-client";
 import type { ChunkMesh, MeshBuffers } from "./mesher";
 import { ChunkStreamer } from "../world/streaming";
@@ -74,7 +74,7 @@ export class ChunkRenderManager {
       y: Math.floor(position.y),
       z: Math.floor(position.z),
     });
-    const changes = this.streamer.reconcile(center, renderDistance);
+    const changes = this.streamer.reconcile(center, renderDistance, 1);
     for (const chunkPosition of changes.unload) this.remove(chunkPosition);
     for (const chunkPosition of changes.load) {
       if (this.world.getChunk(chunkPosition)) void this.rebuild(chunkPosition);
