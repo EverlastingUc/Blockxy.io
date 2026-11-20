@@ -212,7 +212,9 @@ buildStartingWorld();
 
 const raycaster=new THREE.Raycaster();
 raycaster.far=8;
-let selected=0;
+const hotbarIndices=[0,1,2,3,4,5,6,7,8];
+let selectedSlot=0;
+let selected=hotbarIndices[selectedSlot];
 let creativeMode=true;
 let inventoryOpen=false;
 let toastTimer=0;
@@ -231,10 +233,14 @@ const modeLabel=document.querySelector<HTMLElement>("#mode-label")!;
 const slotElements:HTMLElement[]=[];
 function selectBlock(index:number):void{
   selected=(index+blocks.length)%blocks.length;
-  const def=blocks[selected];
-  selectedName.textContent=def.label;
-  slotElements.forEach((slot,i)=>slot.classList.toggle("active",i===selected%9));
-  document.querySelectorAll<HTMLElement>(".inventory-item").forEach(item=>item.classList.toggle("chosen",item.dataset.kind===def.kind));
+  hotbarIndices[selectedSlot]=selected;
+  updateSelectedDisplay();
+  document.querySelectorAll<HTMLElement>(".inventory-item").forEach(item=>item.classList.toggle("chosen",item.dataset.kind===blocks[selected].kind));
+}
+function chooseHotbarSlot(slot:number):void{
+  selectedSlot=(slot+9)%9;
+  selected=hotbarIndices[selectedSlot];
+  updateSelectedDisplay();
 }
 for(let i=0;i<9;i++){
   const slot=document.createElement("div");
@@ -256,7 +262,7 @@ function buildInventory():void{
 }
 function syncHotbarTextures():void{
   slotElements.forEach((slot,i)=>{
-    const block=blocks[(selected+i)%blocks.length];
+    const block=blocks[hotbarIndices[i]];
     const swatch=slot.querySelector<HTMLElement>(".slot-texture")!;
     swatch.style.backgroundColor=`#${block.color.toString(16).padStart(6,"0")}`;
     slot.title=block.label;
@@ -270,7 +276,7 @@ function closeInventory():void{
   inventoryOpen=false;inventory.classList.add("hidden");
   if(welcome.classList.contains("hidden")&&pause.classList.contains("hidden"))controls.lock();
 }
-selectBlock(0);syncHotbarTextures();
+updateSelectedDisplay();
 
 const welcome=document.querySelector<HTMLElement>("#welcome")!;
 const pause=document.querySelector<HTMLElement>("#pause")!;
@@ -278,6 +284,7 @@ const hud=document.querySelector<HTMLElement>("#hud")!;
 const crosshair=document.querySelector<HTMLElement>("#crosshair")!;
 document.querySelector("#play-button")!.addEventListener("click",()=>controls.lock());
 document.querySelector("#resume-button")!.addEventListener("click",()=>controls.lock());
+document.querySelector("#inventory-close")!.addEventListener("click",closeInventory);
 controls.addEventListener("lock",()=>{
   welcome.classList.add("hidden");pause.classList.add("hidden");
   hud.classList.remove("hidden");crosshair.style.display="block";
@@ -305,7 +312,7 @@ function updateMode():void{
 function updateSelectedDisplay():void{
   syncHotbarTextures();
   selectedName.textContent=blocks[selected].label;
-  slotElements.forEach((slot,i)=>slot.classList.toggle("active",i===selected%9));
+  slotElements.forEach((slot,i)=>slot.classList.toggle("active",i===selectedSlot));
 }
 window.addEventListener("keydown",event=>{
   if(["Space","ArrowUp","ArrowDown"].includes(event.code))event.preventDefault();
@@ -313,13 +320,13 @@ window.addEventListener("keydown",event=>{
   if(event.code==="KeyE"&&!event.repeat){if(inventoryOpen)closeInventory();else if(controls.isLocked)openInventory();}
   if(event.code==="Escape"&&inventoryOpen){closeInventory();event.stopPropagation();}
   if(event.code==="KeyG"&&!event.repeat){creativeMode=!creativeMode;velocityY=0;updateMode();showToast(creativeMode?"Creative mode enabled":"Survival mode enabled");}
-  if(/^Digit[1-9]$/.test(event.code)){selectBlock(Number(event.code.slice(5))-1);updateSelectedDisplay();}
+  if(/^Digit[1-9]$/.test(event.code))chooseHotbarSlot(Number(event.code.slice(5))-1);
 });
 window.addEventListener("keyup",event=>keys.delete(event.code));
 window.addEventListener("blur",()=>keys.clear());
 window.addEventListener("wheel",event=>{
   if(!controls.isLocked)return;
-  selectBlock(selected+(event.deltaY>0?1:-1));updateSelectedDisplay();
+  chooseHotbarSlot(selectedSlot+(event.deltaY>0?1:-1));
 },{passive:true});
 window.addEventListener("contextmenu",event=>event.preventDefault());
 
