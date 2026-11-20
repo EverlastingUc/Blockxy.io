@@ -445,6 +445,8 @@ The sequence is deliberate. Do not jump to public multiplayer while the world mo
 - [~] Atlas UV layout and texture-key mapping interfaces exist; the current canvas textures are not yet packed into a runtime atlas.
 - [~] Worker meshing entry point and main-thread fallback executor exist; neither is wired into the active renderer and worker failure recovery remains incomplete.
 - [~] Vitest unit suites and a deterministic mesher benchmark have been added; no performance numbers have been collected.
+- [~] Runtime chunk-render manager now converts world chunks to Three.js layer geometry, builds padded neighbour samples, and remeshes active dirty chunks; it is not yet connected to the live game scene.
+- [~] Runtime texture-atlas packing now creates a single nearest-filtered atlas with edge gutters; the current canvas texture cache is not yet passed into it.
 - [~] Version 2 chunk-save serialization, dirty-chunk merge, validation, and legacy array migration exist as isolated modules; Ctrl+S/Ctrl+L still use the v1 local-storage format.
 
 **Exit condition:** The world can expand beyond the starter island without one mesh per block or full-scene rebuilds.
@@ -452,8 +454,8 @@ The sequence is deliberate. Do not jump to public multiplayer while the world mo
 ### Phase 2 — Complete Creative mode
 - [ ] Full material registry and block catalogue.
 - [ ] Block orientation and variants.
-- [ ] Selection, fill, replace, copy, and paste.
-- [ ] Undo / redo.
+- [~] Bounded selection, fill, replace, copy, and paste logic exists with blueprint validation; it is not yet connected to in-game selection controls.
+- [~] Grouped undo / redo supports atomic multi-block edits; the active game scene still does not expose undo/redo controls.
 - [ ] Blueprint save and placement.
 - [ ] World settings and environment controls.
 - [ ] Build gallery screenshots and local world management.
