@@ -27,7 +27,7 @@ export enum BlockId {
 }
 
 export type RenderLayer = "opaque" | "cutout" | "translucent";
-export type BlockFace = "top" | "side" | "bottom";
+export type BlockFace = "right" | "left" | "top" | "bottom" | "front" | "back";
 
 export interface BlockDefinition {
   readonly id: BlockId;
@@ -42,20 +42,23 @@ export interface BlockDefinition {
 }
 
 const cube = (texture: string): Readonly<Record<BlockFace, string>> => ({
-  top: texture,
-  side: texture,
-  bottom: texture,
+  right: `${texture}_0`,
+  left: `${texture}_1`,
+  top: `${texture}_2`,
+  bottom: `${texture}_3`,
+  front: `${texture}_4`,
+  back: `${texture}_5`,
 });
 
 const definitions: readonly BlockDefinition[] = [
-  { id: BlockId.Grass, key: "grass", label: "Grass Block", category: "Nature", texture: { top: "grass_top", side: "grass_side", bottom: "dirt" }, renderLayer: "opaque", transparent: false, collidable: true, hardness: 0.6 },
+  { id: BlockId.Grass, key: "grass", label: "Grass Block", category: "Nature", texture: { right: "grass_0", left: "grass_1", top: "grass_2", bottom: "grass_3", front: "grass_4", back: "grass_5" }, renderLayer: "opaque", transparent: false, collidable: true, hardness: 0.6 },
   { id: BlockId.Dirt, key: "dirt", label: "Dirt", category: "Nature", texture: cube("dirt"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 0.5 },
   { id: BlockId.Stone, key: "stone", label: "Stone", category: "Stone", texture: cube("stone"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 1.5 },
   { id: BlockId.Cobblestone, key: "cobblestone", label: "Cobblestone", category: "Stone", texture: cube("cobblestone"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 2 },
   { id: BlockId.Bedrock, key: "bedrock", label: "Bedrock", category: "Stone", texture: cube("bedrock"), renderLayer: "opaque", transparent: false, collidable: true, hardness: -1 },
   { id: BlockId.Sand, key: "sand", label: "Sand", category: "Nature", texture: cube("sand"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 0.5 },
   { id: BlockId.Sandstone, key: "sandstone", label: "Sandstone", category: "Stone", texture: cube("sandstone"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 0.8 },
-  { id: BlockId.OakLog, key: "oak_log", label: "Oak Log", category: "Wood", texture: { top: "oak_log_end", side: "oak_log_side", bottom: "oak_log_end" }, renderLayer: "opaque", transparent: false, collidable: true, hardness: 2 },
+  { id: BlockId.OakLog, key: "oak_log", label: "Oak Log", category: "Wood", texture: { right: "oak_log_0", left: "oak_log_1", top: "oak_log_2", bottom: "oak_log_3", front: "oak_log_4", back: "oak_log_5" }, renderLayer: "opaque", transparent: false, collidable: true, hardness: 2 },
   { id: BlockId.OakPlanks, key: "oak_planks", label: "Oak Planks", category: "Wood", texture: cube("oak_planks"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 2 },
   { id: BlockId.Leaves, key: "leaves", label: "Oak Leaves", category: "Nature", texture: cube("leaves"), renderLayer: "cutout", transparent: true, collidable: true, hardness: 0.2 },
   { id: BlockId.Bricks, key: "bricks", label: "Bricks", category: "Building", texture: cube("bricks"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 2 },
