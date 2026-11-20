@@ -461,7 +461,8 @@ window.addEventListener("pagehide",()=>{
 const clock=new THREE.Clock();
 function animate():void{
   requestAnimationFrame(animate);
-  const delta=Math.min(clock.getDelta(),.05);
+  const frameDelta=clock.getDelta();
+  const delta=Math.min(frameDelta,.05);
   if(controls.isLocked&&!inventoryOpen){
     const speed=(keys.has("ControlLeft")?13:creativeMode?8:5)*delta;
     const oldX=camera.position.x,oldZ=camera.position.z;
@@ -487,7 +488,7 @@ function animate():void{
     camera.position.y=THREE.MathUtils.clamp(camera.position.y,-24,100);
   }
   chunkRenderer.updateAroundPlayer(camera.position,4);
-  updatePerformance(delta);
+  updatePerformance(frameDelta);
   renderer.render(scene,camera);
 }
 updateMode();
