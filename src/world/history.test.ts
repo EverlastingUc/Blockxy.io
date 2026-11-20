@@ -17,6 +17,23 @@ describe("block edit history", () => {
     expect(world.getBlock(position)).toBe(BlockId.Glass);
   });
 
+  it("undoes and redoes a batch as one logical operation", () => {
+    const world = new VoxelWorld();
+    const history = new BlockHistory(world);
+    const edits = [
+      { position: { x: 0, y: 0, z: 0 }, next: BlockId.Stone },
+      { position: { x: 1, y: 0, z: 0 }, next: BlockId.Dirt },
+    ];
+    expect(history.editBatch(edits)).toHaveLength(2);
+    expect(history.size).toBe(1);
+    history.undo();
+    expect(world.getBlock({ x: 0, y: 0, z: 0 })).toBe(BlockId.Air);
+    expect(world.getBlock({ x: 1, y: 0, z: 0 })).toBe(BlockId.Air);
+    history.redo();
+    expect(world.getBlock({ x: 0, y: 0, z: 0 })).toBe(BlockId.Stone);
+    expect(world.getBlock({ x: 1, y: 0, z: 0 })).toBe(BlockId.Dirt);
+  });
+
   it("drops redo history after a new edit", () => {
     const world = new VoxelWorld();
     const history = new BlockHistory(world);
