@@ -71,7 +71,7 @@ const definitions: readonly BlockDefinition[] = [
 ];
 
 export const BLOCK_REGISTRY: ReadonlyMap<BlockId, BlockDefinition> = new Map(
-  definitions.map((definition) => [definition.id, Object.freeze(definition)]),
+  definitions.map((definition): [BlockId, BlockDefinition] => [definition.id, Object.freeze(definition)]),
 );
 
 export const BLOCKS: readonly BlockDefinition[] = definitions;
