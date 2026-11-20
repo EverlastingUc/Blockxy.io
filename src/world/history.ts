@@ -1,6 +1,6 @@
 import type { BlockChange, VoxelWorld } from "./world";
-import { BlockId } from "./registry";
-import type { VoxelPosition } from "./coordinates";
+import { BlockId, getBlockDefinition } from "./registry";
+import { voxelToChunk, type VoxelPosition } from "./coordinates";
 
 export interface BlockEdit {
   readonly position: VoxelPosition;
@@ -23,6 +23,10 @@ export class BlockHistory {
 
   /** Applies a logical operation as one undo/redo step (e.g. fill or paste). */
   editBatch(edits: readonly BlockEdit[]): BlockChange[] {
+    for (const edit of edits) {
+      voxelToChunk(edit.position);
+      if (edit.next !== BlockId.Air) getBlockDefinition(edit.next);
+    }
     const changes: BlockChange[] = [];
     for (const edit of edits) {
       const change = this.world.setBlock(edit.position, edit.next);
