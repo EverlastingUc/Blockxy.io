@@ -30,6 +30,7 @@ function geometryFromBuffers(buffers: MeshBuffers): THREE.BufferGeometry {
   geometry.setAttribute("position", new THREE.BufferAttribute(buffers.positions, 3));
   geometry.setAttribute("normal", new THREE.BufferAttribute(buffers.normals, 3));
   geometry.setAttribute("uv", new THREE.BufferAttribute(buffers.uvs, 2));
+  geometry.setAttribute("color", new THREE.BufferAttribute(buffers.colors, 4));
   geometry.setIndex(new THREE.BufferAttribute(buffers.indices, 1));
   geometry.computeBoundingSphere();
   return geometry;
@@ -61,10 +62,10 @@ export class ChunkRenderManager {
   ) {
     this.executor = executor;
     this.materials = {
-      opaque: new THREE.MeshStandardMaterial({ map: atlasTexture, roughness: 1 }),
-      cutout: new THREE.MeshStandardMaterial({ map: atlasTexture, roughness: 1, alphaTest: 0.35 }),
+      opaque: new THREE.MeshStandardMaterial({ map: atlasTexture, roughness: 1, vertexColors: true }),
+      cutout: new THREE.MeshStandardMaterial({ map: atlasTexture, roughness: 1, alphaTest: 0.35, vertexColors: true }),
       translucent: new THREE.MeshStandardMaterial({
-        map: atlasTexture, roughness: 0.25, transparent: true, opacity: 0.78, depthWrite: false,
+        map: atlasTexture, roughness: 0.25, transparent: true, opacity: 1, vertexColors: true, depthWrite: false,
       }),
     };
   }
