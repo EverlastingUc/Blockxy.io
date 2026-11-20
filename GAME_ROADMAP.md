@@ -70,10 +70,10 @@ This section records what exists in the repository now. It is not a claim that t
 - [~] Rust and C++ project scaffolds exist.
 - [ ] Rust is not yet integrated into the browser runtime.
 - [ ] C++/WASM is not yet integrated into the browser runtime.
-- [ ] The current renderer creates a mesh per block. It is not yet a scalable chunk renderer.
+- [ ] The current renderer creates a mesh per block. The new chunk mesher is not yet connected to the scene.
 - [ ] No online accounts, cloud saves, multiplayer, public world browser, or implemented achievement/profile backend yet.
 
-**Current reality:** Blockxy is an early playable Creative sandbox prototype. The next engineering priority is to replace the per-block rendering approach with chunk-based world storage and exposed-face meshing before attempting very large worlds.
+**Current reality:** Blockxy remains an early playable Creative sandbox prototype. New TypeScript world-core modules now cover numeric block IDs, chunk storage, coordinates, exposed-face meshing, dirty tracking, streaming calculations, versioned save conversion, and edit history. These modules are not yet integrated into the existing playable scene. The live renderer still creates one mesh per block, and the live save path still uses v1. The next milestone is integration and end-to-end verification—not claiming the scalable engine is already running.
 
 ---
 
@@ -430,22 +430,22 @@ The sequence is deliberate. Do not jump to public multiplayer while the world mo
 - [x] Hotbar and inventory foundation.
 - [x] Local save/load prototype.
 - [ ] Fix gameplay bugs found through actual browser testing.
-- [ ] Centralise block definitions and material properties.
-- [ ] Add basic undo/redo and reliable placement feedback.
+- [~] Centralised numeric block registry and block-history modules exist, but the active game scene still uses its legacy string-based block definitions and does not yet use undo/redo.
+- [ ] Integrate the registry and history into the playable scene and verify placement/break feedback.
 
 **Exit condition:** A player can build, edit, save, reload, and continue a small world reliably.
 
 ### Phase 1 — Scalable voxel engine
 **Next major engineering milestone**
 
-- [ ] Chunk-based world data model.
-- [ ] Chunk loading / unloading.
-- [ ] Exposed-face mesh generation.
-- [ ] Neighbour chunk boundary correctness.
-- [ ] Mesh and texture atlas strategy.
-- [ ] Worker-based generation and meshing.
-- [ ] Profiling tools and reproducible performance tests.
-- [ ] World save format based on versioned chunk data.
+- [~] Chunk data model, coordinate conversion, and dirty-chunk tracking modules exist; the playable scene still uses its legacy voxel map.
+- [~] Render-distance chunk selection and load/unload reconciliation logic exist, but are not connected to player movement or scene lifecycle.
+- [~] Exposed-face mesher and padded-neighbour sampling contract exist with unit tests; the active renderer still creates one mesh per block.
+- [~] Mesher accepts neighbour samples across chunk boundaries; runtime adjacent-chunk integration remains unverified.
+- [~] Atlas UV layout and texture-key mapping interfaces exist; the current canvas textures are not yet packed into a runtime atlas.
+- [~] Worker meshing entry point and main-thread fallback executor exist; neither is wired into the active renderer and worker failure recovery remains incomplete.
+- [~] Vitest unit suites and a deterministic mesher benchmark have been added; no performance numbers have been collected.
+- [~] Version 2 chunk-save serialization, dirty-chunk merge, validation, and legacy array migration exist as isolated modules; Ctrl+S/Ctrl+L still use the v1 local-storage format.
 
 **Exit condition:** The world can expand beyond the starter island without one mesh per block or full-scene rebuilds.
 
