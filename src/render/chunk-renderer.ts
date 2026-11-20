@@ -49,6 +49,8 @@ export class ChunkRenderManager {
   private readonly materials: Record<(typeof LAYERS)[number], THREE.MeshStandardMaterial>;
   private readonly executor: MeshingExecutor;
   private disposed = false;
+  private lastCenterKey = "";
+  private lastRenderDistance = 0;
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -75,6 +77,13 @@ export class ChunkRenderManager {
       y: Math.floor(position.y),
       z: Math.floor(position.z),
     });
+    const centerKey = chunkKey(center);
+    if (centerKey === this.lastCenterKey && renderDistance === this.lastRenderDistance) {
+      this.rebuildDirty();
+      return;
+    }
+    this.lastCenterKey = centerKey;
+    this.lastRenderDistance = renderDistance;
     const changes = this.streamer.reconcile(center, renderDistance, 1);
     for (const chunkPosition of changes.unload) {
       const key = chunkKey(chunkPosition);
@@ -175,6 +184,8 @@ export class ChunkRenderManager {
     for (const key of [...this.rendered.keys()]) this.removeRendered(key);
     this.streamer.clear();
     this.activeKeys.clear();
+    this.lastCenterKey = "";
+    this.lastRenderDistance = 0;
   }
 
   dispose(): void {
