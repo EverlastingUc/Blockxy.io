@@ -97,21 +97,22 @@ export function fillSelection(
 ): SelectionEditResult {
   const normalized = normalizeSelection(bounds);
   const size = assertVolume(normalized, maxVolume);
-  let changed = 0;
+  const edits = [];
   let skipped = 0;
   for (let y = 0; y < size.y; y += 1) {
     for (let z = 0; z < size.z; z += 1) {
       for (let x = 0; x < size.x; x += 1) {
-        const change = history.edit({
+        const position = {
           x: normalized.min.x + x,
           y: normalized.min.y + y,
           z: normalized.min.z + z,
-        }, id);
-        if (change.previous === change.current) skipped += 1;
-        else changed += 1;
+        };
+        edits.push({ position, next: id });
       }
     }
   }
+  const changed = history.editBatch(edits).length;
+  skipped = size.x * size.y * size.z - changed;
   return { changed, skipped };
 }
 
@@ -125,7 +126,7 @@ export function replaceSelection(
 ): SelectionEditResult {
   const normalized = normalizeSelection(bounds);
   const size = assertVolume(normalized, maxVolume);
-  let changed = 0;
+  const edits = [];
   let skipped = 0;
   for (let y = 0; y < size.y; y += 1) {
     for (let z = 0; z < size.z; z += 1) {
@@ -139,13 +140,12 @@ export function replaceSelection(
           skipped += 1;
           continue;
         }
-        const change = history.edit(position, to);
-        if (change.previous === change.current) skipped += 1;
-        else changed += 1;
+        edits.push({ position, next: to });
       }
     }
   }
-  return { changed, skipped };
+  const changed = history.editBatch(edits).length;
+  return { changed, skipped: skipped + edits.length - changed };
 }
 
 /** Pastes occupied blueprint voxels; empty blueprint cells never erase destination blocks. */
@@ -157,12 +157,13 @@ export function pasteSelection(
 ): SelectionEditResult {
   assertPosition(origin);
   const volume = blueprint.size.x * blueprint.size.y * blueprint.size.z;
-  if (![blueprint.size.x, blueprint.size.y, blueprint.size.z].every((value) => Number.isSafeInteger(value) && value > 0) ||
+  if (!Number.isSafeInteger(maxVolume) || maxVolume < 1 ||
+      ![blueprint.size.x, blueprint.size.y, blueprint.size.z].every((value) => Number.isSafeInteger(value) && value > 0) ||
       !Number.isSafeInteger(volume) || volume > maxVolume || blueprint.blocks.length > volume) {
     throw new RangeError("Invalid or oversized blueprint");
   }
-  let changed = 0;
-  let skipped = 0;
+  const edits = [];
+  const seen = new Set<string>();
   for (const block of blueprint.blocks) {
     if (![block.x, block.y, block.z].every(Number.isSafeInteger) ||
         block.x < 0 || block.x >= blueprint.size.x ||
@@ -171,13 +172,17 @@ export function pasteSelection(
         !Number.isInteger(block.id) || block.id <= BlockId.Air || block.id > BlockId.Wool) {
       throw new TypeError("Blueprint contains an invalid block");
     }
-    const change = history.edit({
+    const key = `${block.x},${block.y},${block.z}`;
+    if (seen.has(key)) throw new TypeError("Blueprint contains duplicate block positions");
+    seen.add(key);
+    const position = {
       x: origin.x + block.x,
       y: origin.y + block.y,
       z: origin.z + block.z,
-    }, block.id);
-    if (change.previous === change.current) skipped += 1;
-    else changed += 1;
+    };
+    assertPosition(position);
+    edits.push({ position, next: block.id });
   }
-  return { changed, skipped };
+  const changed = history.editBatch(edits).length;
+  return { changed, skipped: edits.length - changed };
 }
