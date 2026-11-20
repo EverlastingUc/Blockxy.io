@@ -255,7 +255,9 @@ function buildInventory():void{
     const item=document.createElement("button");
     item.className="inventory-item";
     item.dataset.kind=block.kind;
-    item.innerHTML=`<span class="inventory-swatch" style="--block-color:#${block.color.toString(16).padStart(6,"0")}"></span><span>${block.label}</span>`;
+    item.innerHTML=`<span class="inventory-swatch"></span><span>${block.label}</span>`;
+    const preview=makeTexture(block.kind,2).image as HTMLCanvasElement;
+    item.querySelector<HTMLElement>(".inventory-swatch")!.style.backgroundImage="url("+preview.toDataURL()+")";
     item.addEventListener("click",()=>{selectBlock(index);closeInventory();});
     inventoryGrid.append(item);
   });
@@ -264,7 +266,8 @@ function syncHotbarTextures():void{
   slotElements.forEach((slot,i)=>{
     const block=blocks[hotbarIndices[i]];
     const swatch=slot.querySelector<HTMLElement>(".slot-texture")!;
-    swatch.style.backgroundColor=`#${block.color.toString(16).padStart(6,"0")}`;
+    const preview=makeTexture(block.kind,2).image as HTMLCanvasElement;
+    swatch.style.backgroundImage="url("+preview.toDataURL()+")";
     slot.title=block.label;
   });
 }
@@ -320,6 +323,8 @@ window.addEventListener("keydown",event=>{
   if(event.code==="KeyE"&&!event.repeat){if(inventoryOpen)closeInventory();else if(controls.isLocked)openInventory();}
   if(event.code==="Escape"&&inventoryOpen){closeInventory();event.stopPropagation();}
   if(event.code==="KeyG"&&!event.repeat){creativeMode=!creativeMode;velocityY=0;updateMode();showToast(creativeMode?"Creative mode enabled":"Survival mode enabled");}
+  if(event.code==="KeyS"&&event.ctrlKey){event.preventDefault();saveWorld();}
+  if(event.code==="KeyL"&&event.ctrlKey){event.preventDefault();loadWorld();}
   if(/^Digit[1-9]$/.test(event.code))chooseHotbarSlot(Number(event.code.slice(5))-1);
 });
 window.addEventListener("keyup",event=>keys.delete(event.code));
@@ -349,6 +354,25 @@ window.addEventListener("mousedown",event=>{
   }
 });
 
+const SAVE_KEY="blockxy.creative-world.v1";
+function saveWorld():void{
+  const data=[...voxelMap.values()].map(({mesh,kind})=>({x:Math.round(mesh.position.x),y:Math.round(mesh.position.y),z:Math.round(mesh.position.z),kind}));
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));showToast("World saved · "+data.length.toLocaleString()+" blocks");}
+  catch{showToast("Save failed: browser storage is full");}
+}
+function loadWorld():void{
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);if(!raw){showToast("No saved world found");return;}
+    const data:unknown=JSON.parse(raw);if(!Array.isArray(data))throw new Error("Invalid save");
+    for(const voxel of voxelMap.values())scene.remove(voxel.mesh);voxelMap.clear();
+    for(const item of data){if(!item||!Number.isFinite(item.x)||!Number.isFinite(item.y)||!Number.isFinite(item.z)||!blockByKind.has(item.kind))continue;addBlock(item.x,item.y,item.z,item.kind as BlockKind);}
+    showToast("World loaded · "+voxelMap.size.toLocaleString()+" blocks");
+  }catch{showToast("Could not load this world save");}
+}
+window.addEventListener("pagehide",()=>{
+  const data=[...voxelMap.values()].map(({mesh,kind})=>({x:Math.round(mesh.position.x),y:Math.round(mesh.position.y),z:Math.round(mesh.position.z),kind}));
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch{/* Browser storage may be unavailable. */}
+});
 const clock=new THREE.Clock();
 function animate():void{
   requestAnimationFrame(animate);
