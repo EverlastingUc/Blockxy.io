@@ -37,6 +37,7 @@ workerScope.addEventListener("message", (event) => {
       mesh[layer].positions.buffer,
       mesh[layer].normals.buffer,
       mesh[layer].uvs.buffer,
+      mesh[layer].colors.buffer,
       mesh[layer].indices.buffer,
     );
   }
