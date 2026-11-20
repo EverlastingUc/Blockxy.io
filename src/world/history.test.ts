@@ -34,6 +34,17 @@ describe("block edit history", () => {
     expect(world.getBlock({ x: 1, y: 0, z: 0 })).toBe(BlockId.Dirt);
   });
 
+  it("validates an entire batch before changing the world", () => {
+    const world = new VoxelWorld();
+    const history = new BlockHistory(world);
+    expect(() => history.editBatch([
+      { position: { x: 0, y: 0, z: 0 }, next: BlockId.Stone },
+      { position: { x: 1, y: 0, z: 0 }, next: 999 as BlockId },
+    ])).toThrow(RangeError);
+    expect(world.getBlock({ x: 0, y: 0, z: 0 })).toBe(BlockId.Air);
+    expect(history.size).toBe(0);
+  });
+
   it("drops redo history after a new edit", () => {
     const world = new VoxelWorld();
     const history = new BlockHistory(world);
