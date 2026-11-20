@@ -6,7 +6,7 @@ describe("block registry", () => {
     expect(BLOCKS).toHaveLength(20);
     expect(blockIdFromKey("grass")).toBe(BlockId.Grass);
     expect(blockIdFromKey("wool")).toBe(BlockId.Wool);
-    expect(getBlockDefinition(BlockId.OakLog).texture.top).toBe("oak_log_end");
+    expect(getBlockDefinition(BlockId.OakLog).texture.top).toBe("oak_log_2");
   });
 
   it("defines rendering and gameplay properties centrally", () => {
