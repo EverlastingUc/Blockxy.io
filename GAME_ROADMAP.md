@@ -440,7 +440,7 @@ The sequence is deliberate. Do not jump to public multiplayer while the world mo
 **Next major engineering milestone**
 
 - [~] Chunk data, coordinate conversion, and dirty tracking now drive the playable scene instead of the legacy per-block voxel map; browser regression testing remains.
-- [~] Render-distance streaming is connected to player movement, with vertical chunk coverage and unload cleanup.
+- [~] Render-distance streaming is connected to player movement, with vertical chunk coverage, unload cleanup, and keyboard-adjustable 1–12 chunk distance.
 - [~] Exposed-face meshing and padded neighbour sampling are connected to the live chunk renderer; boundary behaviour has automated tests.
 - [~] Runtime atlas packing now consumes the original 120 face-specific canvas textures and supplies the chunk renderer.
 - [~] Worker meshing with main-thread fallback is connected to the live renderer; actual browser worker behaviour still needs manual verification.
