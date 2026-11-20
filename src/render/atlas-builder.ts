@@ -67,8 +67,7 @@ export function createTextureAtlas(
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Could not create the texture atlas canvas");
 
-  const cellSize = tileSize + gutter * 2;
-  tiles.forEach(({ key, source }, index) => {
+  tiles.forEach(({ key, source }) => {
     const tile = layout.get(key)!;
     const x = Math.round(tile.u0 * width);
     const y = Math.round(tile.v0 * height);
@@ -85,8 +84,6 @@ export function createTextureAtlas(
       context.drawImage(source, 0, sourceHeight - 1, 1, 1, x - gutter, y + tileSize, gutter, gutter);
       context.drawImage(source, sourceWidth - 1, sourceHeight - 1, 1, 1, x + tileSize, y + tileSize, gutter, gutter);
     }
-    void index;
-    void cellSize;
   });
 
   const texture = new THREE.CanvasTexture(canvas);
