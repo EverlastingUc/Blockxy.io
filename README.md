@@ -2,16 +2,31 @@
 
 **Blockxy.io** is a browser-based voxel building sandbox built with TypeScript and Three.js.
 
-## Current creative build
+## Current playable build
 
-- First-person 3D voxel world with a procedurally generated floating island and trees.
-- Creative mode is enabled by default: unlimited block placement and free flight.
-- Twenty block types with generated 16×16 pixel-art textures, including grass, dirt, stone, cobblestone, bedrock, sand, sandstone, oak log, planks, leaves, bricks, glass, water, ores, snow, ice, and wool.
-- Nine-slot hotbar with direct number selection and mouse-wheel switching.
-- Block inventory opened with **E**. Selecting an inventory block equips it in the currently selected hotbar slot.
-- Break blocks with left click and place blocks with right click.
-- Save the world with **Ctrl+S** and load it with **Ctrl+L**. The current world is also saved automatically when leaving the page, using browser local storage.
-- Survival prototype can be toggled with **G**; it enables gravity and jumping.
+- First-person creative voxel world with a generated starter island and trees.
+- Creative flight, with a prototype Survival mode enabled using **G**.
+- Twenty block types with generated 16×16 textures and six directional texture tiles per block.
+- Nine-slot hotbar, number-key selection, and mouse-wheel switching.
+- Block inventory opened with **E**.
+- Left click breaks blocks; right click places the selected block.
+- **Ctrl+S** saves and **Ctrl+L** loads the world. Saves use version 2 chunk data; older v1 local saves are migrated on load.
+- **Ctrl+Z / Ctrl+Y** undo and redo single-block edits.
+- **F3** toggles the performance overlay.
+
+## Voxel engine
+
+The live scene now uses the TypeScript voxel world and chunk renderer:
+
+- World data is stored as numeric block IDs in 16×16×64 chunks, independently of Three.js.
+- Exposed-face meshing removes internal block faces and samples neighbour borders.
+- A runtime texture atlas packs the existing face-specific textures.
+- Chunk visuals are streamed around the player and rebuilt when active chunks become dirty.
+- Meshing runs through a Web Worker when available, with a main-thread fallback.
+- Chunk save v2 serializes numeric IDs and merges changed chunks; legacy v1 saves are migrated.
+- The F3 overlay reports FPS, stored block count, rendered/stored chunks, and configured render distance.
+
+The repository also contains bounded selection, fill, replace, copy, paste, and grouped undo/redo logic. Those selection operations are tested but are not yet exposed through in-game selection controls.
 
 ## Run locally
 
@@ -37,35 +52,37 @@ Open the local URL printed by Vite.
 | G | Toggle Creative / Survival |
 | Ctrl + S | Save world |
 | Ctrl + L | Load saved world |
+| Ctrl + Z | Undo last block edit |
+| Ctrl + Y | Redo last block edit |
+| F3 | Toggle performance overlay |
 | Esc | Pause / release mouse |
 
-## Technology direction
+## Verification
 
-- **TypeScript + Three.js:** browser client, rendering, input, UI, voxel presentation.
-- **Rust:** planned deterministic world simulation and world-generation systems, compiled to WebAssembly after the core API stabilizes.
-- **C++ / WebAssembly:** planned performance-critical voxel algorithms such as chunk meshing, behind a typed interface and benchmarked against TypeScript.
-
-Rust and C++ are not yet integrated into the browser runtime. The current voxel renderer still uses one mesh per block; chunk meshing, large-world streaming, multiplayer, advanced physics, and production WASM integration remain future engineering milestones.
-
-## Voxel engine groundwork (not yet wired into the live scene)
-
-The repository now contains an isolated TypeScript foundation under `src/world` and `src/render`:
-
-- Stable numeric IDs and central material metadata for the original 20 blocks.
-- 16×16×64 chunk storage, integer coordinate conversion, and dirty-neighbour tracking.
-- Exposed-face mesh generation with atlas UV input and boundary sampling.
-- Render-distance chunk selection and a worker-capable meshing executor with a synchronous fallback.
-- Version 2 chunk-save conversion, legacy v1 array migration, import validation, and block edit history.
-- Vitest suites for the world core and a deterministic mesher benchmark.
-
-**Important:** These are engine modules and tests, not a completed game migration. The current playable scene still uses its original per-block Three.js meshes and v1 local-storage save path. The next task is to integrate the modules into the live scene and verify that all existing controls and textures remain intact.
-
-Run the checks with:
+GitHub Actions runs:
 
 ```bash
 npm run typecheck
 npm run lint
 npm test
 npm run build
+```
+
+A deterministic mesher benchmark is available with:
+
+```bash
 npm run benchmark
 ```
+
+Automated CI checks validate the code and unit tests. Manual browser gameplay regression testing and representative performance measurements are still required before calling the engine migration complete.
+
+## Technology direction
+
+- **TypeScript + Three.js:** browser client, world orchestration, rendering, input, and UI.
+- **Web Workers:** background chunk meshing with a tested main-thread fallback.
+- **Rust / WebAssembly:** planned for deterministic world generation and simulation after the TypeScript world API stabilizes.
+- **C++ / WebAssembly:** only for performance-critical algorithms if benchmarks demonstrate a measurable benefit.
+
+Rust, C++, and WASM are not yet integrated. Public multiplayer, cloud saves, advanced Survival mechanics, and creator publishing remain future milestones.
+
+See [GAME_ROADMAP.md](./GAME_ROADMAP.md) for the master implementation plan.
