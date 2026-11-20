@@ -251,7 +251,7 @@ function updatePerformance(delta:number):void{
     `BLOCKS    ${blockCount.toLocaleString()}`,
     `CHUNKS    ${chunkRenderer.renderedChunkCount} rendered / ${voxelWorld.loadedChunkCount} stored`,
     `DISTANCE  4 chunks`,
-  ].join("\\n");
+  ].join("\n");
   perfFrames=0;
   perfElapsed=0;
 }
