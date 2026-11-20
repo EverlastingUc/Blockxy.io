@@ -1,16 +1,17 @@
 # Blockxy.io
 
-**Blockxy.io** is a browser-based voxel sandbox built with TypeScript, Three.js, and WebAssembly modules.
+**Blockxy.io** is a browser-based voxel building sandbox built with TypeScript and Three.js.
 
-## Current build
+## Current creative build
 
-The first playable foundation includes:
-- A procedurally shaped voxel island with trees.
-- First-person mouse look, WASD movement, gravity, collision, and jumping.
-- Survival and Creative modes (press `G` to switch; Creative enables flight).
-- Block breaking and placement.
-- A five-block hotbar.
-- Responsive HUD and pause/resume flow.
+- First-person 3D voxel world with a procedurally generated floating island and trees.
+- Creative mode is enabled by default: unlimited block placement and free flight.
+- Twenty block types with generated 16×16 pixel-art textures, including grass, dirt, stone, cobblestone, bedrock, sand, sandstone, oak log, planks, leaves, bricks, glass, water, ores, snow, ice, and wool.
+- Nine-slot hotbar with direct number selection and mouse-wheel switching.
+- Block inventory opened with **E**. Selecting an inventory block equips it in the currently selected hotbar slot.
+- Break blocks with left click and place blocks with right click.
+- Save the world with **Ctrl+S** and load it with **Ctrl+L**. The current world is also saved automatically when leaving the page, using browser local storage.
+- Survival prototype can be toggled with **G**; it enables gravity and jumping.
 
 ## Run locally
 
@@ -19,17 +20,29 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite. Use **WASD** to move, **mouse** to look, **Space** to jump, **Shift** to fly up/down in Creative, **G** to switch between Survival and Creative, **left click** to break, **right click** to place, and **1–5** to select a block. Hold **Ctrl** to sprint. Press **Esc** to pause.
+Open the local URL printed by Vite.
+
+## Controls
+
+| Input | Action |
+|---|---|
+| WASD | Move |
+| Mouse | Look around |
+| Space / Shift | Fly up / down in Creative |
+| Left click | Break block |
+| Right click | Place selected block |
+| 1–9 | Select hotbar slot |
+| Mouse wheel | Cycle hotbar slots |
+| E | Open / close block inventory |
+| G | Toggle Creative / Survival |
+| Ctrl + S | Save world |
+| Ctrl + L | Load saved world |
+| Esc | Pause / release mouse |
 
 ## Technology direction
 
-- **TypeScript + Three.js:** browser client, rendering, input, UI, and world presentation.
-- **Rust:** deterministic world simulation and world-generation systems, compiled to WebAssembly when the core API stabilizes.
-- **C++ / WebAssembly:** performance-critical voxel algorithms (for example, chunk meshing), introduced behind a small typed interface and benchmarked against the TypeScript baseline.
-- **JavaScript:** browser platform integration and tooling where plain JS is the simplest fit.
+- **TypeScript + Three.js:** browser client, rendering, input, UI, voxel presentation.
+- **Rust:** planned deterministic world simulation and world-generation systems, compiled to WebAssembly after the core API stabilizes.
+- **C++ / WebAssembly:** planned performance-critical voxel algorithms such as chunk meshing, behind a typed interface and benchmarked against TypeScript.
 
-Rust and C++ are planned engine modules; they are not falsely represented as integrated in this initial browser build.
-
-## Development status
-
-This is the initial playable prototype. Chunk streaming, persistent worlds, multiplayer, inventory, crafting, and production WebAssembly integration are not implemented yet. The current collision and movement system is an early prototype.
+Rust and C++ are not yet integrated into the browser runtime. The current voxel renderer still uses one mesh per block; chunk meshing, large-world streaming, multiplayer, advanced physics, and production WASM integration remain future engineering milestones.
