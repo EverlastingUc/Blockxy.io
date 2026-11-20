@@ -3,11 +3,11 @@ import { buildChunkMesh } from "./mesher";
 import { BlockId, CHUNK_HEIGHT, CHUNK_WIDTH, CHUNK_DEPTH } from "../world/registry";
 import type { TextureAtlasLayout } from "./atlas";
 
-const atlas: TextureAtlasLayout = new Map([
-  "grass_top", "grass_side", "dirt", "stone", "glass", "water", "oak_log_end", "oak_log_side",
-  "cobblestone", "bedrock", "sand", "sandstone", "oak_planks", "leaves", "bricks",
-  "coal_ore", "iron_ore", "gold_ore", "diamond_ore", "snow", "ice", "wool",
-].map((name, index) => [name, { u0: index / 32, v0: 0, u1: (index + 1) / 32, v1: 1 }]));
+const atlas: TextureAtlasLayout = new Map(
+  ["grass", "dirt", "stone", "cobblestone", "bedrock", "sand", "sandstone", "oak_log", "oak_planks", "leaves", "bricks", "glass", "water", "coal_ore", "iron_ore", "gold_ore", "diamond_ore", "snow", "ice", "wool"]
+    .flatMap((name) => Array.from({ length: 6 }, (_, face) => `${name}_${face}`))
+    .map((name, index) => [name, { u0: index / 120, v0: 0, u1: (index + 1) / 120, v1: 1 }] as const),
+);
 
 function sampleWith(blocks: ReadonlyMap<string, BlockId>) {
   return (x: number, y: number, z: number): BlockId => blocks.get(`${x},${y},${z}`) ?? BlockId.Air;
