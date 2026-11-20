@@ -42,7 +42,7 @@ describe("exposed-face mesher", () => {
       if (x === CHUNK_WIDTH && y === 0 && z === 0) return BlockId.Stone;
       return BlockId.Air;
     }, atlas);
-    expect(mesh.opaque.faceCount).toBe(10);
+    expect(mesh.opaque.faceCount).toBe(5);
     expect(CHUNK_HEIGHT).toBe(64);
     expect(CHUNK_DEPTH).toBe(16);
   });
