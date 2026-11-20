@@ -233,6 +233,28 @@ let creativeMode=true;
 let inventoryOpen=false;
 let toastTimer=0;
 const toast=document.querySelector<HTMLElement>("#toast")!;
+const perfOverlay=document.querySelector<HTMLElement>("#perf-overlay")!;
+let perfFrames=0;
+let perfElapsed=0;
+function updatePerformance(delta:number):void{
+  if(perfOverlay.classList.contains("hidden"))return;
+  perfFrames+=1;
+  perfElapsed+=delta;
+  if(perfElapsed<0.5)return;
+  const fps=Math.round(perfFrames/perfElapsed);
+  let blockCount=0;
+  for(const [,chunk] of voxelWorld.entries()){
+    for(const id of chunk.blocks)if(id!==BlockId.Air)blockCount+=1;
+  }
+  perfOverlay.textContent=[
+    `FPS       ${fps}`,
+    `BLOCKS    ${blockCount.toLocaleString()}`,
+    `CHUNKS    ${chunkRenderer.renderedChunkCount} rendered / ${voxelWorld.loadedChunkCount} stored`,
+    `DISTANCE  4 chunks`,
+  ].join("\\n");
+  perfFrames=0;
+  perfElapsed=0;
+}
 function showToast(message:string):void{
   toast.textContent=message;toast.style.opacity="1";
   window.clearTimeout(toastTimer);
@@ -352,6 +374,7 @@ window.addEventListener("keydown",event=>{
   if(event.code==="KeyE"&&!event.repeat){if(inventoryOpen)closeInventory();else if(controls.isLocked)openInventory();}
   if(event.code==="Escape"&&inventoryOpen){closeInventory();event.stopPropagation();}
   if(event.code==="KeyG"&&!event.repeat){creativeMode=!creativeMode;velocityY=0;updateMode();showToast(creativeMode?"Creative mode enabled":"Survival mode enabled");}
+  if(event.code==="F3"){event.preventDefault();perfOverlay.classList.toggle("hidden");perfFrames=0;perfElapsed=0;}
   if(event.code==="KeyS"&&event.ctrlKey){event.preventDefault();saveWorld();}
   if(event.code==="KeyL"&&event.ctrlKey){event.preventDefault();loadWorld();}
   if(event.code==="KeyZ"&&event.ctrlKey&&!event.repeat){event.preventDefault();const change=blockHistory.undo();if(change){trackSaveChange(change.position);chunkRenderer.rebuildDirty();showToast("Undo");}}
@@ -461,6 +484,7 @@ function animate():void{
     camera.position.y=THREE.MathUtils.clamp(camera.position.y,-24,100);
   }
   chunkRenderer.updateAroundPlayer(camera.position,4);
+  updatePerformance(delta);
   renderer.render(scene,camera);
 }
 updateMode();
