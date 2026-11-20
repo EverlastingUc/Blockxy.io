@@ -171,15 +171,19 @@ export class ChunkRenderManager {
     return this.rendered.size;
   }
 
+  clear(): void {
+    for (const key of [...this.rendered.keys()]) this.removeRendered(key);
+    this.streamer.clear();
+    this.activeKeys.clear();
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const key of this.rendered.keys()) this.removeRendered(key);
+    this.clear();
     this.executor.dispose();
     for (const material of Object.values(this.materials)) material.dispose();
     this.atlasTexture.dispose();
-    this.streamer.clear();
-    this.activeKeys.clear();
   }
 }
 
