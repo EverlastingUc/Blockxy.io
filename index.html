@@ -4,35 +4,47 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101820" />
-    <meta name="description" content="Blockxy.io — build, explore, and shape a voxel world." />
-    <title>Blockxy.io</title>
+    <meta name="description" content="Blockxy.io — a creative voxel world. Build anything, one block at a time." />
+    <title>Blockxy.io — Creative Voxel World</title>
   </head>
   <body>
     <div id="app">
-      <div id="game">
-        <div id="topbar">
+      <main id="game">
+        <header id="topbar">
           <a class="brand" href="/">BLOCKXY<span>.IO</span></a>
-          <div class="top-hint">VOXEL SANDBOX <i></i> EARLY BUILD</div>
-        </div>
+          <div class="top-hint">VOXEL SANDBOX <i></i> BUILD WITHOUT LIMITS</div>
+        </header>
         <div id="crosshair"></div>
         <section id="welcome" class="overlay">
-          <div class="eyebrow">A WORLD BUILT BY YOU</div>
-          <h1>Make your<br /><span>own world.</span></h1>
-          <p>Explore, jump, mine, and build. Switch between Survival and Creative whenever you want.</p>
-          <button id="play-button">ENTER WORLD <span>→</span></button>
-          <div class="controls-note">WASD MOVE <b>·</b> MOUSE LOOK <b>·</b> SPACE JUMP <b>·</b> G CHANGE MODE</div>
+          <div class="eyebrow">YOUR WORLD. YOUR RULES.</div>
+          <h1>Build<br /><span>anything.</span></h1>
+          <p>A creative voxel sandbox. Fly freely, discover blocks, and turn an empty space into your own world.</p>
+          <button id="play-button">CREATE WORLD <span>→</span></button>
+          <div class="controls-note">WASD MOVE <b>·</b> MOUSE LOOK <b>·</b> SPACE FLY UP <b>·</b> SHIFT FLY DOWN</div>
         </section>
-        <div id="hud" class="hidden">
+        <section id="hud" class="hidden">
+          <div id="mode-label" class="mode-label">CREATIVE</div>
+          <div id="selected-name">Grass Block</div>
           <div id="hotbar"></div>
-          <div class="mode-label" id="mode-label">SURVIVAL</div><div class="help">WASD <span>MOVE</span> &nbsp; SPACE <span>JUMP / FLY</span> &nbsp; LMB <span>BREAK</span> &nbsp; RMB <span>PLACE</span> &nbsp; G <span>MODE</span> &nbsp; 1–5 <span>BLOCKS</span> &nbsp; ESC <span>PAUSE</span></div>
-        </div>
-        <div id="pause" class="overlay hidden">
+          <div class="help">WASD <span>MOVE</span> · SPACE / SHIFT <span>FLY</span> · LMB <span>BREAK</span> · RMB <span>PLACE</span> · E <span>BLOCKS</span> · G <span>MODE</span> · 1–9 <span>HOTBAR</span></div>
+        </section>
+        <section id="inventory" class="inventory-panel hidden">
+          <div class="inventory-header">
+            <div><div class="eyebrow">BLOCKXY CREATIVE</div><h2>Block inventory</h2></div>
+            <button id="inventory-close" type="button" aria-label="Close inventory">×</button>
+          </div>
+          <p class="inventory-subtitle">Choose a block to equip it. Every block is unlimited.</p>
+          <div id="inventory-grid"></div>
+          <div class="inventory-footer">CLICK A BLOCK TO SELECT <span>·</span> PRESS E OR ESC TO CLOSE</div>
+        </section>
+        <section id="pause" class="overlay hidden">
           <div class="eyebrow">WORLD PAUSED</div>
-          <h2>Take a breather.</h2>
-          <button id="resume-button">RESUME <span>→</span></button>
-        </div>
+          <h2>Ready to build?</h2>
+          <button id="resume-button">RESUME WORLD <span>→</span></button>
+          <div class="controls-note">PRESS E TO OPEN YOUR BLOCK INVENTORY</div>
+        </section>
         <div id="toast" aria-live="polite"></div>
-      </div>
+      </main>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
