@@ -46,3 +46,25 @@ Open the local URL printed by Vite.
 - **C++ / WebAssembly:** planned performance-critical voxel algorithms such as chunk meshing, behind a typed interface and benchmarked against TypeScript.
 
 Rust and C++ are not yet integrated into the browser runtime. The current voxel renderer still uses one mesh per block; chunk meshing, large-world streaming, multiplayer, advanced physics, and production WASM integration remain future engineering milestones.
+
+## Voxel engine groundwork (not yet wired into the live scene)
+
+The repository now contains an isolated TypeScript foundation under `src/world` and `src/render`:
+
+- Stable numeric IDs and central material metadata for the original 20 blocks.
+- 16×16×64 chunk storage, integer coordinate conversion, and dirty-neighbour tracking.
+- Exposed-face mesh generation with atlas UV input and boundary sampling.
+- Render-distance chunk selection and a worker-capable meshing executor with a synchronous fallback.
+- Version 2 chunk-save conversion, legacy v1 array migration, import validation, and block edit history.
+- Vitest suites for the world core and a deterministic mesher benchmark.
+
+**Important:** These are engine modules and tests, not a completed game migration. The current playable scene still uses its original per-block Three.js meshes and v1 local-storage save path. The next task is to integrate the modules into the live scene and verify that all existing controls and textures remain intact.
+
+Run the checks with:
+
+```bash
+npm run typecheck
+npm test
+npm run build
+npm run benchmark
+```
