@@ -45,7 +45,7 @@ function visibleFace(current: BlockId, neighbour: BlockId): boolean {
   if (neighbour === BlockId.Air) return true;
   const neighbourDefinition = getBlockDefinition(neighbour);
   if (neighbourDefinition.renderLayer === "opaque") return false;
-  return current !== neighbour;
+  return current < neighbour;
 }
 
 export function buildChunkMesh(
