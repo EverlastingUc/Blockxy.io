@@ -71,6 +71,7 @@ const keyOf = (x: number, y: number, z: number) => `${x},${y},${z}`;
 const pendingSaveChunks = new Map<string, ChunkPosition>();
 let lastSaved: WorldSaveV2 | undefined;
 let buildingWorld = true;
+let renderDistance = 4;
 function trackSaveChange(position: { x: number; y: number; z: number }): void {
   const chunk = voxelToChunk(position);
   pendingSaveChunks.set(chunkKey(chunk), chunk);
@@ -222,7 +223,7 @@ function buildStartingWorld(): void {
 }
 buildStartingWorld();
 buildingWorld = false;
-chunkRenderer.updateAroundPlayer(camera.position, 4);
+chunkRenderer.updateAroundPlayer(camera.position, renderDistance);
 
 const raycaster=new THREE.Raycaster();
 raycaster.far=8;
@@ -250,7 +251,7 @@ function updatePerformance(delta:number):void{
     `FPS       ${fps}`,
     `BLOCKS    ${blockCount.toLocaleString()}`,
     `CHUNKS    ${chunkRenderer.renderedChunkCount} rendered / ${voxelWorld.loadedChunkCount} stored`,
-    `DISTANCE  4 chunks`,
+    `DISTANCE  ${renderDistance} chunks`,
   ].join("\n");
   perfFrames=0;
   perfElapsed=0;
@@ -375,6 +376,8 @@ window.addEventListener("keydown",event=>{
   if(event.code==="Escape"&&inventoryOpen){closeInventory();event.stopPropagation();}
   if(event.code==="KeyG"&&!event.repeat){creativeMode=!creativeMode;velocityY=0;updateMode();showToast(creativeMode?"Creative mode enabled":"Survival mode enabled");}
   if(event.code==="F3"){event.preventDefault();perfOverlay.classList.toggle("hidden");perfFrames=0;perfElapsed=0;}
+  if(event.code==="BracketLeft"&&!event.repeat){renderDistance=Math.max(1,renderDistance-1);chunkRenderer.updateAroundPlayer(camera.position,renderDistance);showToast("Render distance · "+renderDistance+" chunks");}
+  if(event.code==="BracketRight"&&!event.repeat){renderDistance=Math.min(12,renderDistance+1);chunkRenderer.updateAroundPlayer(camera.position,renderDistance);showToast("Render distance · "+renderDistance+" chunks");}
   if(event.code==="KeyS"&&event.ctrlKey){event.preventDefault();saveWorld();}
   if(event.code==="KeyL"&&event.ctrlKey){event.preventDefault();loadWorld();}
   if(event.code==="KeyZ"&&event.ctrlKey&&!event.repeat){event.preventDefault();const change=blockHistory.undo();if(change){trackSaveChange(change.position);chunkRenderer.rebuildDirty();showToast("Undo");}}
@@ -448,7 +451,7 @@ function loadWorld():void{
     lastSaved=parsed;
     localStorage.setItem(SAVE_KEY_V2,JSON.stringify(parsed));
     chunkRenderer.clear();
-    chunkRenderer.updateAroundPlayer(camera.position,4);
+    chunkRenderer.updateAroundPlayer(camera.position,renderDistance);
     showToast("World loaded · "+parsed.chunks.reduce((sum,chunk)=>sum+chunk.blocks.length,0).toLocaleString()+" blocks");
   }catch{showToast("Could not load this world save");}
 }
