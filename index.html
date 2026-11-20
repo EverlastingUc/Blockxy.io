@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101820" />
+    <meta name="description" content="Blockxy.io — build, explore, and shape a voxel world." />
+    <title>Blockxy.io</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="game">
+        <div id="topbar">
+          <a class="brand" href="/">BLOCKXY<span>.IO</span></a>
+          <div class="top-hint">VOXEL SANDBOX <i></i> EARLY BUILD</div>
+        </div>
+        <div id="crosshair"></div>
+        <section id="welcome" class="overlay">
+          <div class="eyebrow">A WORLD BUILT BY YOU</div>
+          <h1>Make your<br /><span>own world.</span></h1>
+          <p>Explore a small voxel island. Break blocks, place blocks, and make it yours.</p>
+          <button id="play-button">ENTER WORLD <span>→</span></button>
+          <div class="controls-note">WASD MOVE <b>·</b> MOUSE LOOK <b>·</b> SPACE UP <b>·</b> SHIFT DOWN</div>
+        </section>
+        <div id="hud" class="hidden">
+          <div id="hotbar"></div>
+          <div class="help">LMB <span>BREAK</span> &nbsp; RMB <span>PLACE</span> &nbsp; 1–5 <span>SELECT</span> &nbsp; ESC <span>PAUSE</span></div>
+        </div>
+        <div id="pause" class="overlay hidden">
+          <div class="eyebrow">WORLD PAUSED</div>
+          <h2>Take a breather.</h2>
+          <button id="resume-button">RESUME <span>→</span></button>
+        </div>
+        <div id="toast" aria-live="polite"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

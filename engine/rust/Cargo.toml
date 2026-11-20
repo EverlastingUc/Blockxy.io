@@ -1,0 +1,10 @@
+[package]
+name = "blockxy-world"
+version = "0.1.0"
+edition = "2021"
+description = "Deterministic world primitives for Blockxy.io"
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
