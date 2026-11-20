@@ -39,6 +39,7 @@ export interface BlockDefinition {
   readonly transparent: boolean;
   readonly collidable: boolean;
   readonly hardness: number;
+  readonly opacity?: number;
 }
 
 const cube = (texture: string): Readonly<Record<BlockFace, string>> => ({
@@ -62,14 +63,14 @@ const definitions: readonly BlockDefinition[] = [
   { id: BlockId.OakPlanks, key: "oak_planks", label: "Oak Planks", category: "Wood", texture: cube("oak_planks"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 2 },
   { id: BlockId.Leaves, key: "leaves", label: "Oak Leaves", category: "Nature", texture: cube("leaves"), renderLayer: "cutout", transparent: true, collidable: true, hardness: 0.2 },
   { id: BlockId.Bricks, key: "bricks", label: "Bricks", category: "Building", texture: cube("bricks"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 2 },
-  { id: BlockId.Glass, key: "glass", label: "Glass", category: "Building", texture: cube("glass"), renderLayer: "translucent", transparent: true, collidable: true, hardness: 0.3 },
-  { id: BlockId.Water, key: "water", label: "Water", category: "Nature", texture: cube("water"), renderLayer: "translucent", transparent: true, collidable: false, hardness: 100 },
+  { id: BlockId.Glass, key: "glass", label: "Glass", category: "Building", texture: cube("glass"), renderLayer: "translucent", transparent: true, collidable: true, hardness: 0.3, opacity: 0.42 },
+  { id: BlockId.Water, key: "water", label: "Water", category: "Nature", texture: cube("water"), renderLayer: "translucent", transparent: true, collidable: false, hardness: 100, opacity: 0.72 },
   { id: BlockId.CoalOre, key: "coal_ore", label: "Coal Ore", category: "Ores", texture: cube("coal_ore"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 3 },
   { id: BlockId.IronOre, key: "iron_ore", label: "Iron Ore", category: "Ores", texture: cube("iron_ore"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 3 },
   { id: BlockId.GoldOre, key: "gold_ore", label: "Gold Ore", category: "Ores", texture: cube("gold_ore"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 3 },
   { id: BlockId.DiamondOre, key: "diamond_ore", label: "Diamond Ore", category: "Ores", texture: cube("diamond_ore"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 3 },
   { id: BlockId.Snow, key: "snow", label: "Snow", category: "Nature", texture: cube("snow"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 0.2 },
-  { id: BlockId.Ice, key: "ice", label: "Ice", category: "Nature", texture: cube("ice"), renderLayer: "translucent", transparent: true, collidable: true, hardness: 0.5 },
+  { id: BlockId.Ice, key: "ice", label: "Ice", category: "Nature", texture: cube("ice"), renderLayer: "translucent", transparent: true, collidable: true, hardness: 0.5, opacity: 1 },
   { id: BlockId.Wool, key: "wool", label: "Wool", category: "Building", texture: cube("wool"), renderLayer: "opaque", transparent: false, collidable: true, hardness: 0.8 },
 ];
 
