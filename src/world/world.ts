@@ -1,4 +1,4 @@
-import { BlockId } from "./registry";
+import { BlockId, getBlockDefinition } from "./registry";
 import { Chunk } from "./chunk";
 import { chunkKey, voxelToChunk, voxelToLocal, type ChunkPosition, type VoxelPosition } from "./coordinates";
 import { CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH } from "./registry";
@@ -34,6 +34,7 @@ export class VoxelWorld {
   }
 
   setBlock(position: VoxelPosition, id: BlockId): BlockChange {
+    if (id !== BlockId.Air) getBlockDefinition(id);
     const chunkPosition = voxelToChunk(position);
     const local = voxelToLocal(position);
     const previous = this.getBlock(position);
